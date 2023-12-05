@@ -27,9 +27,6 @@ private:
 
   void propagate_call_freq(llvm::Function *f, llvm::Function *head, bool is_final);
 
-  // Algorithm improvement. Traces possible functions called, and returns the frequency of their calls.
-  std::vector<std::pair<llvm::Function *, double>> trace_indirect_call(llvm::CallInst *);
-
   // The result of Block and Edge Frequencies (Algorithm 2) for each function.
   BlockEdgeFrequencyPass *getBlockEdgeFrequency(llvm::Function *);
   std::map<llvm::Function *, BlockEdgeFrequencyPass *> function_block_edge_frequency_;
