@@ -43,7 +43,7 @@ struct Points2_analysis {
   Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *call);
 
   // The functions that can be called by _call_ and their local call frequency.
-  vector<pair<Function *, double>> &get_result();
+  map<Function *, double> &get_result();
 
 private:
   // Helper functions.
@@ -59,10 +59,12 @@ private:
   double total_bfreq_; // Sum of all BB frequencies in function_map_.
   set<BasicBlock *> call_ancestors_;
   map<BasicBlock *, BasicBlock *> returns_ = {}; // Artificial edge between caller and callee's return.
+  // [ref] -> [bb, function];
   map<BasicBlock *, map<BasicBlock *, Function *>> function_map_;
   // [ref] -> [bb, freq];
   map<BasicBlock *, map<BasicBlock *, double>> corrected_freqs_;
-  vector<pair<Function *, double>> result_;
+//  vector<pair<Function *, double>> result_;
+  map<Function *, double> result_;
 };
 
 void print(BasicBlock *bb)
@@ -397,29 +399,24 @@ Points2_analysis::Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *ca
       for (auto &jt : it.second) {
         outs() << "("; print(it.first);
         outs() << "/"; print(jt.first);
+        if (jt.second) outs() << "/" << jt.second->getName();
+        else outs() << "/NULL";
         outs() << ") = " << corrected_freqs_[it.first][jt.first] << "\n";
       }
   }
-/*
-  {// Push frequencies to <traced>.
+  {// Push corrected frequencies to result_.
     for (const auto &it : function_map_) {
-      BasicBlock *bb = it.first;
-      Function *func = it.second;
-      double lfreq = corrected_freqs_[bb];
-      if (func) {
-        outs() << "Pushing: BB [";
-        print(bb);
-        outs() << "] -> [" << func->getName() << "]"
-               << "(" << pass.get_local_block_frequency(bb)
-               << ", " << lfreq << ")\n";
-        result_.push_back(make_pair(func, lfreq));
+      BasicBlock *ref = it.first;
+      for (const auto &jt : it.second) {
+        if (!jt.second) continue; // Don't push null.
+        if (!result_.count(jt.second)) result_[jt.second] = 0;
+        result_[jt.second] += corrected_freqs_[ref][jt.first];
       }
     }
   }
-*/
 }
 
-vector<pair<Function *, double>> &Points2_analysis::get_result() { return result_; }
+map<Function *, double> &Points2_analysis::get_result() { return result_; }
 
 void Points2_analysis::get_ancestors(set<BasicBlock *> &set, BasicBlock *bb)
 {
@@ -512,28 +509,6 @@ void Points2_analysis::map_functions()
       } outs() << "}\n";
     }
 }
-
-/*
-First try:
-corrected_freqs_[ref][bb] += pass_.get_local_edge_frequency(bb, succ) * correct_freq(ref, succ);
-PRINTING CORRECTED FREQS:
-(%28/%2) = 2.127473e+01
-(%28/%18) = 4.510530e+05
-(%28/%19) = 8.591485e+04
-
-Second try:
-corrected_freqs_[ref][bb] += (pass_.get_local_edge_frequency(bb, succ) /  pass_.get_local_block_frequency(bb))
-  * correct_freq(ref, succ);
-(%28/%2) = 7.013646e-01
-(%28/%18) = 7.013646e-01
-(%28/%19) = 7.013646e-01
-
-Third try:
-if (original) corrected_freqs_[ref][bb] *= pass_.get_local_block_frequency(bb);
-(%28/%2) = 7.013646e-01
-(%28/%18) = 1.728162e+01
-(%28/%19) = 3.291738e+00
-*/
 
 double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb, bool original)
 {
