@@ -38,16 +38,6 @@ cl::opt<bool> use_points2(
 /* Points-to analysis:
  * Improvement to allow Algorithm 3 use calls through pointers when counting local call frequecies.
 ***********************************************************************************************************************/
-/*
-struct Block_link {
-  bool is_final; // Discriminator: when true, the union value is func, else is bb.
-  union {
-    Function *func;
-    BasicBlock *bb;
-  };
-};
-*/
-
 struct Points2_analysis {
   // The analysis is run on the constructor.
   Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *call);
@@ -62,7 +52,7 @@ private:
   // Map all basic blocks that may set the function called by call.
   void map_functions();
   // Correct block frequency when other successor block overwrites the its effects.
-  double correct_freq(BasicBlock *ref, BasicBlock *bb);
+  double correct_freq(BasicBlock *ref, BasicBlock *bb, bool original);
 
   FunctionCallFrequencyPass &pass_; // We need local block and edge frequency info.
   CallInst *call_; // The indirect call instruction whose pointer operand we are mapping to actual functions.
@@ -106,10 +96,8 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
   FunctionAnalysisManager &fam = mam.getResult<FunctionAnalysisManagerModuleProxy>(module).getManager();
   Function *entry_func = module.getFunction("main");
 
-/*
-  for (Function &foo : module)
-    foo.viewCFG();
-*/
+//  for (Function &foo : module)
+//    foo.viewCFG();
 
   {// Step.0.
     // Get the Block and Edges Frequencies using BlockEdgeFrequencyPass for each function.
@@ -402,7 +390,7 @@ Points2_analysis::Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *ca
 */
   for (auto &it : function_map_)
     for (auto &jt : it.second)
-      correct_freq(it.first, jt.first);
+      correct_freq(it.first, jt.first, true);
   {// Print.
     outs() << "PRINTING CORRECTED FREQS:\n";
     for (auto &it : function_map_)
@@ -526,18 +514,28 @@ void Points2_analysis::map_functions()
 }
 
 /*
-[%17] {
-  [%2] = (NULL)
-  [%11] = (one)
-  [%12] = (zero)
-}
-[%21] {
-  [%2] = (NULL)
-  [%11] = (zero)
-  [%12] = (one)
-}
- */
-double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb)
+First try:
+corrected_freqs_[ref][bb] += pass_.get_local_edge_frequency(bb, succ) * correct_freq(ref, succ);
+PRINTING CORRECTED FREQS:
+(%28/%2) = 2.127473e+01
+(%28/%18) = 4.510530e+05
+(%28/%19) = 8.591485e+04
+
+Second try:
+corrected_freqs_[ref][bb] += (pass_.get_local_edge_frequency(bb, succ) /  pass_.get_local_block_frequency(bb))
+  * correct_freq(ref, succ);
+(%28/%2) = 7.013646e-01
+(%28/%18) = 7.013646e-01
+(%28/%19) = 7.013646e-01
+
+Third try:
+if (original) corrected_freqs_[ref][bb] *= pass_.get_local_block_frequency(bb);
+(%28/%2) = 7.013646e-01
+(%28/%18) = 1.728162e+01
+(%28/%19) = 3.291738e+00
+*/
+
+double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb, bool original)
 {
   BasicBlock *call_bb = call_->getParent();
 
@@ -557,18 +555,10 @@ double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb)
   else corrected_freqs_[ref][bb] = 0;
   for (BasicBlock *succ : successors(bb)) {
     outs() << "Successor: "; print(ref); outs() << "/"; print(succ); outs() << "\n";
-    if (!call_ancestors_.count(succ)) {
-      outs() << "Skipping on cond 0\n";
-      continue; // Skip if its not a predecessor to <call_bb> or if it overwrites the store.
-    }
-    if ((function_map_.count(succ) && succ != ref)) {
-      outs() << "Skipping on cond 1\n";
-      continue; // Skip if its not a predecessor to <call_bb> or if it overwrites the store.
-    }
-    if (function_map_[ref].count(succ)) {
-      outs() << "Skipping on cond 2\n";
-      continue; // Skip if its not a predecessor to <call_bb> or if it overwrites the store.
-    }
+    if (!(call_ancestors_.count(succ)) // The successor is not an ancestor to the call.
+        || (function_map_.count(succ) && succ != ref) // The successor is a reference, but not the current one.
+        || (function_map_[ref].count(succ)) // The successor overwrites the store in the current reference.
+    ) { continue; } // Skip the successor if any of the coditions above were met.
     if (function_map_.count(succ)) { // We found a path ta reaches the call.
       outs() << "Path to call found\n";
       corrected_freqs_[ref][bb] += pass_.get_local_edge_frequency(bb, succ);
@@ -577,16 +567,10 @@ double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb)
 //      corrected_freqs_[bb] += correct_freq(returns_[succ]);
     } else { // DFS to correct successor.
       outs() << "DFS to successor\n";
-      corrected_freqs_[ref][bb] += pass_.get_local_edge_frequency(bb, succ) * correct_freq(ref, succ);
+      corrected_freqs_[ref][bb] += (pass_.get_local_edge_frequency(bb, succ) /  pass_.get_local_block_frequency(bb))
+        * correct_freq(ref, succ, false);
     }
   }
-//  double ratio = get_local_block_frequency(bb) / total_bfreq_;
-//  outs() << "CORRECTED BB[" << bb->getParent()->getName() << "/"; bb->printAsOperand(outs(), false);
-//  outs() <<  "] "
-//         << "/ ratio = " << ratio
-//         << " / original freq = " << get_local_block_frequency(bb)
-//         << " / corrected freq = " << corrected_freqs[bb]
-//         << " / adjusted freq = " << corrected_freqs[bb] * ratio
-//         << "\n";
+  if (original) corrected_freqs_[ref][bb] *= pass_.get_local_block_frequency(bb); //? / total_bfreq;
   return corrected_freqs_[ref][bb];// TODO: * ratio;
 }
