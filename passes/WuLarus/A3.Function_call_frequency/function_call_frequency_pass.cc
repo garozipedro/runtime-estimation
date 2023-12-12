@@ -537,14 +537,17 @@ double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb, bool orig
     if (function_map_.count(succ)) { // We found a path ta reaches the call.
       outs() << "Path to call found\n";
       corrected_freqs_[ref][bb] += pass_.get_local_edge_frequency(bb, succ);
-//    } else if (returns_.count(succ)) {// The successor is a block with a return, so it's tied to his caller.
-//      outs() << "Successor tied by return\n";
-//      corrected_freqs_[bb] += correct_freq(returns_[succ]);
     } else { // DFS to correct successor.
       outs() << "DFS to successor\n";
       corrected_freqs_[ref][bb] += (pass_.get_local_edge_frequency(bb, succ) /  pass_.get_local_block_frequency(bb))
         * correct_freq(ref, succ, false);
     }
+  }
+  if (returns_.count(bb)) {// This block has a return, so it's callers are it's successors.
+    outs() << "Return to [";
+    print(returns_[bb]);
+    outs() << "]\n";
+    corrected_freqs_[ref][bb] += pass_.get_local_block_frequency(bb) * correct_freq(ref, returns_[bb], false);
   }
   if (original) corrected_freqs_[ref][bb] *= pass_.get_local_block_frequency(bb); //? / total_bfreq;
   return corrected_freqs_[ref][bb];// TODO: * ratio;

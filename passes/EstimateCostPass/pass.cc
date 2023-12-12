@@ -15,6 +15,7 @@
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/CFG.h>
 #include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -58,8 +59,13 @@ private:
 };
 
 llvm::PreservedAnalyses EstimateCostPass::run(llvm::Module &module, llvm::ModuleAnalysisManager &mam) {
-  outs() << "Estimate Cost Pass for module:\n";
-  outs() << module;
+  outs() << "Estimate Cost Pass for module: [" << module.getName() << "]\n";;
+//  outs() << module;
+
+  // Count functions in module.
+  int fcount = 0;
+  for (auto &f : module) ++fcount;
+  outs() << "There are " << fcount << " functions to be analyzed.\n";
 
   outs() << "\n********************[ Running Wu & Larus ]********************\n\n";
   wu_larus_ = &mam.getResult<FunctionCallFrequencyPass>(module);
@@ -70,9 +76,13 @@ llvm::PreservedAnalyses EstimateCostPass::run(llvm::Module &module, llvm::Module
     for (BasicBlock &bb : fun) {
       outs() << "\t[";  bb.printAsOperand(outs(), false);
       outs() << "] frequency = ("
-//             << wu_larus_->getBlockEdgeFrequency(&fun)->getBlockFrequency(&bb)
              << wu_larus_->get_local_block_frequency(&bb) << ", "
              << wu_larus_->get_global_block_frequency(&bb) << ")\n";
+      for (BasicBlock *succ : successors(&bb)) {
+        outs() << "\t->[";
+        succ->printAsOperand(outs(), false);
+        outs() << "] = " << wu_larus_->get_local_edge_frequency(&bb, succ) << "\n";
+      }
     }
   }
 
