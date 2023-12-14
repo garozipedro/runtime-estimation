@@ -20,6 +20,7 @@
 
 #include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -35,10 +36,18 @@ cl::opt<bool> use_points2(
   cl::value_desc("true or false")
 );
 
+#ifdef NDEBUG
+raw_ostream &debs = nulls();
+#else
+raw_ostream &debs = outs();
+#endif
+
 /* Points-to analysis:
  * Improvement to allow Algorithm 3 use calls through pointers when counting local call frequecies.
 ***********************************************************************************************************************/
 struct Points2_analysis {
+  using Trace_map = map<BasicBlock *, Function *>;
+
   // The analysis is run on the constructor.
   Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *call);
 
@@ -50,26 +59,60 @@ private:
   // Get all predecessors of bb and predecessors of its predecessors up to the root.
   void get_ancestors(set<BasicBlock *> &ancestors, BasicBlock *bb);
   // Map all basic blocks that may set the function called by call.
-  void map_functions();
+  void trace(Instruction *ref, Trace_map &traced);
   // Correct block frequency when other successor block overwrites the its effects.
   double correct_freq(BasicBlock *ref, BasicBlock *bb, bool original);
 
   FunctionCallFrequencyPass &pass_; // We need local block and edge frequency info.
   CallInst *call_; // The indirect call instruction whose pointer operand we are mapping to actual functions.
-  double total_bfreq_; // Sum of all BB frequencies in function_map_.
   set<BasicBlock *> call_ancestors_;
   map<BasicBlock *, BasicBlock *> returns_ = {}; // Artificial edge between caller and callee's return.
-  // [ref] -> [bb, function];
-  map<BasicBlock *, map<BasicBlock *, Function *>> function_map_;
-  // [ref] -> [bb, freq];
-  map<BasicBlock *, map<BasicBlock *, double>> corrected_freqs_;
-//  vector<pair<Function *, double>> result_;
+  Trace_map top_trace_;
+//  map<BasicBlock *, double> corrected_freqs_;
   map<Function *, double> result_;
 };
 
-void print(BasicBlock *bb)
+string print(Function *func)
 {
-  bb->printAsOperand(outs(), false);
+  string str;
+  raw_string_ostream ss(str);
+  ss << "[";
+  if (func) ss << string{func->getName()};
+  else ss << "NULL";
+  ss << "]";
+  return str;
+}
+
+string print(BasicBlock *bb)
+{
+  string str;
+  raw_string_ostream ss(str);
+
+  ss << print(bb->getParent());
+  ss << "::[";
+  bb->printAsOperand(ss, false);
+  ss << "]";
+  return str;
+}
+
+string print(Instruction *instr)
+{
+  string str;
+  raw_string_ostream ss(str);
+  ss << print(instr->getParent());
+  ss << "::[" << *instr << "]";
+  return str;
+}
+
+string print(const Points2_analysis::Trace_map &map)
+{
+  string str;
+  raw_string_ostream ss(str);
+  for (auto &it : map) {
+    ss << "(" << print(it.first) << "/"
+       << print(it.second) << ")\n";
+  }
+  return str;
 }
 
 /* Algorithm 3.
@@ -98,6 +141,7 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
   FunctionAnalysisManager &fam = mam.getResult<FunctionAnalysisManagerModuleProxy>(module).getManager();
   Function *entry_func = module.getFunction("main");
 
+  debs << module;
 //  for (Function &foo : module)
 //    foo.viewCFG();
 
@@ -120,7 +164,7 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
               Points2_analysis p2 (*this, call);
               auto traced_functions = p2.get_result();
               for (auto &traced : traced_functions) {
-                outs() << "Traced call to function [" << traced.first->getName() << "] = "
+                debs << "Traced call to function: " << print(traced.first) << " = "
                        << traced.second << "\n";
                 Edge edge = make_pair(&func, traced.first);
                 // TODO: sum all traced freqs and add them proportionally to call's BB bfreq.
@@ -358,62 +402,17 @@ llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() {
 Points2_analysis::Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *call) :
   pass_(pass), call_(call)
 {
-  outs() << "\n\n\n***[ Tracing : " << *call << "]***\n";
-
-  // Definitions.
-  BasicBlock *call_bb = call->getParent(); // _cbb_.
-  double total_stores_freq = 0; // Frequency sum of all BB with relevant stores.
-
-  get_ancestors(call_ancestors_, call_bb);
-  {// Print.
-    outs() << "call ancestors = {";
-    for (auto pred : call_ancestors_) {
-      outs() << " ";
-      pred->printAsOperand(outs(), false);
-    } outs() << " }\n";
-  }
-  map_functions();
+  debs << "\n***[ Tracing indirect call: " << print(call) << "]***\n";
+  trace(dyn_cast<Instruction>(call_->getCalledOperand()), top_trace_);
 /*
-  total_bfreq_ = 0;
-  for (auto &it : function_map_)
-    total_bfreq_ += pass.get_local_block_frequency(it.first);
-*/
-/*
-  {// Print.
-    outs() << "Mapped lfreqs:\n";
-    for (auto it : function_map_) {
-      outs() << "\tbfreq(" << it.first->getParent()->getName() << "/";
-      it.first->printAsOperand(outs(), false);
-      outs() << ") = " << pass.get_local_block_frequency(it.first) << " => ";
-      if (it.second) outs() << it.second->getName() << "\n";
-      else outs() << "NULL\n";
-    }
-  }
-*/
-  for (auto &it : function_map_)
-    for (auto &jt : it.second)
-      correct_freq(it.first, jt.first, true);
-  {// Print.
-    outs() << "PRINTING CORRECTED FREQS:\n";
-    for (auto &it : function_map_)
-      for (auto &jt : it.second) {
-        outs() << "("; print(it.first);
-        outs() << "/"; print(jt.first);
-        if (jt.second) outs() << "/" << jt.second->getName();
-        else outs() << "/NULL";
-        outs() << ") = " << corrected_freqs_[it.first][jt.first] << "\n";
-      }
-  }
   {// Push corrected frequencies to result_.
     for (const auto &it : function_map_) {
-      BasicBlock *ref = it.first;
-      for (const auto &jt : it.second) {
-        if (!jt.second) continue; // Don't push null.
-        if (!result_.count(jt.second)) result_[jt.second] = 0;
-        result_[jt.second] += corrected_freqs_[ref][jt.first];
-      }
+      if (!it.second) continue; // Don't push null.
+      if (!result_.count(it.second)) result_[it.second] = 0;
+      result_[it.second] += corrected_freqs_[ref][jt.first];
     }
   }
+*/
 }
 
 map<Function *, double> &Points2_analysis::get_result() { return result_; }
@@ -427,91 +426,90 @@ void Points2_analysis::get_ancestors(set<BasicBlock *> &set, BasicBlock *bb)
     }
 }
 
-void Points2_analysis::map_functions()
+void Points2_analysis::trace(Instruction *ref, Trace_map &result)
 {
-    Instruction *callee = dyn_cast<Instruction>(call_->getCalledOperand());
-    deque<Instruction *> instructions = {callee};
-    LoadInst *ref_load = nullptr;
-    set<BasicBlock *> ref_load_ancestors;
-    outs() << "MAPPING BLOCKS TO FUNCTIONS\n";
-    outs() << "***************************\n";
-    while (!instructions.empty()) {
-      Instruction *curri = instructions.back();
-      instructions.pop_back();
+  assert(ref && result.empty());
+  deque<Instruction *> instructions = {ref};
+  set<BasicBlock *> ref_ancestors;
+  debs << "Tracing [" << print(ref) << "]\n";
+  debs << "************************************************************\n";
+  get_ancestors(ref_ancestors, ref->getParent());
+  while (!instructions.empty()) {
+    Instruction *curri = instructions.back();
+    instructions.pop_back();
+    {// Print.
+      debs << "-> [" << print(curri) << "]\n";
+    }
+    if (auto *alloca_instr = dyn_cast<AllocaInst>(curri)) {// Follow stores to alloca's value.
+      map<BasicBlock *, StoreInst *> stores;
+      for (User *user : alloca_instr->users()) {
+        if (auto *store_instr = dyn_cast<StoreInst>(user)) {
+//          outs() << "STORE USER [" << *store_instr << "]\n";
+          if ((store_instr->getParent() == ref->getParent() && !store_instr->comesBefore(ref)) ||
+              !ref_ancestors.count(store_instr->getParent())) continue;
+          bool insert_store_cond =
+            // There is no other store instruction in the same BB.
+            !stores.count(store_instr->getParent()) ||
+            // store_instr overwrites previous store from BB.
+            stores[store_instr->getParent()]->comesBefore(store_instr);
+          if (insert_store_cond) {
+            debs << "Pushing store: " << print(store_instr) << "]\n";
+            stores[store_instr->getParent()] = store_instr;
+          }
+        }
+      }
+/*
       {// Print.
-        outs() << "-> [" << *curri << "]\n";
+        outs() << "Stores = {\n";
+        for (auto &it : stores) {
+          outs() << "BB ["; print(it.first);
+          outs() << "] -> [" << *it.second << "]\n";
+        } outs() << "}\n";
       }
-      if (auto *alloca_instr = dyn_cast<AllocaInst>(curri)) {// Follow stores to alloca's value.
-        assert(ref_load);
-        map<BasicBlock *, StoreInst *> stores;
-        for (User *user : alloca_instr->users()) {
-          if (auto *store_instr = dyn_cast<StoreInst>(user)) {
-            outs() << "STORE [";
-            print(dyn_cast<Instruction>(user)->getParent());
-            outs() << "/" << *user << "]\n";
-            if ((store_instr->getParent() == ref_load->getParent() && !store_instr->comesBefore(ref_load)) ||
-              !ref_load_ancestors.count(store_instr->getParent())) continue;
-            bool insert_store_cond =
-              // There is no other store instruction in the same BB.
-              stores.find(store_instr->getParent()) == stores.end() ||
-              // store_instr comes after the currently last visited store instruction from store_instr's BB.
-              stores[store_instr->getParent()]->comesBefore(store_instr);
-            if (insert_store_cond) stores[store_instr->getParent()] = store_instr;
-          }
+*/
+      for (auto &store : stores) {// Filter final (function or NULL) and non final stores.
+        if (auto *instr = dyn_cast<Instruction>(store.second->getValueOperand())) {
+          instructions.push_back(instr);
+        } else {//TODO: else if dyn_cast<Function>(...
+          result[store.first] = dyn_cast<Function>(store.second->getValueOperand());
+          debs << "Inserting: " << print(store.second) << "\n";
         }
-        for (auto &store : stores) {// Filter final (function or NULL) and non final stores.
-          if (auto *instr = dyn_cast<Instruction>(store.second->getValueOperand())) {
-            instructions.push_back(instr);
-          } else {//TODO: else if dyn_cast<Function>(...
-            function_map_[ref_load->getParent()].emplace(
-              store.first, dyn_cast<Function>(store.second->getValueOperand()));
-            outs() << "Inserting [";
-            print(store.first);
-            outs() << "/" << *store.second << "\n";
-          }
-        }
-      } else if (auto *load_instr = dyn_cast<LoadInst>(curri)) {// Follow load operand.
-        ref_load = load_instr;
-        outs() << "Ref load now is [" << *ref_load << "]\n";
+      }
+    } else if (auto *load_instr = dyn_cast<LoadInst>(curri)) {// Follow load operand.
+      if (curri != ref) {
+        debs << "Got another load instruction!\n";
+        Trace_map new_map;
+        trace(curri, new_map);
+//        return;
+      } else {
+        debs << "Pushing Load operand [" << *load_instr->getPointerOperand() << "]\n";
         instructions.push_back(dyn_cast<Instruction>(load_instr->getPointerOperand()));
-        ref_load_ancestors.clear();
-        get_ancestors(ref_load_ancestors, ref_load->getParent());
-      } else if (auto *call_instr = dyn_cast<CallInst>(curri)) {// Follow call's return.
-        if (Function *callee = dyn_cast<Function>(call_instr->getCalledOperand())) {
-          for (BasicBlock &bb : *callee) {
-            call_ancestors_.insert(&bb); // All BB from this function are now ancestors to the caller.
-            for (Instruction &inst : bb)
-              if (auto *ret = dyn_cast<ReturnInst>(&inst)) {// Get function's return instruction.
-                returns_[&bb] = call_instr->getParent();
-                if (auto *instr = dyn_cast<Instruction>(ret->getReturnValue())) {
-                  instructions.push_back(instr);
-                } else if (auto *func = dyn_cast<Function>(ret->getReturnValue())) {
-                  function_map_[ref_load->getParent()].emplace(curri->getParent(), func);
-                }
+      }
+    } else if (auto *call_instr = dyn_cast<CallInst>(curri)) {// Follow call's return.
+      if (Function *callee = dyn_cast<Function>(call_instr->getCalledOperand())) {
+        for (BasicBlock &bb : *callee) {
+          call_ancestors_.insert(&bb); // All BB from this function are now ancestors to the caller.
+          for (Instruction &inst : bb)
+            if (auto *ret = dyn_cast<ReturnInst>(&inst)) {// Get function's return instruction.
+              returns_[&bb] = call_instr->getParent();
+              if (auto *instr = dyn_cast<Instruction>(ret->getReturnValue())) {
+                instructions.push_back(instr);
+              } else if (auto *func = dyn_cast<Function>(ret->getReturnValue())) {
+//                result[ref->getParent()].emplace(curri->getParent(), func);
               }
-          }
+            }
         }
       }
     }
-    outs() << "FINAL MAP\n";
-    outs() << "*********\n";
-    for (auto &it : function_map_) {
-      outs() << "[";
-      print(it.first);
-      outs() << "] \n{";
-      for (auto &jt : it.second) {
-        outs() << "\t[";
-        print(jt.first);
-        outs() << "] = (";
-        if (jt.second) outs() << jt.second->getName();
-        else outs() << "NULL";
-        outs() << ")\n";
-      } outs() << "}\n";
-    }
+  }
+  debs << "FINAL MAP FOR: " << print(ref) << "\n"
+       << "*********\n"
+       << print(result);
 }
 
 double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb, bool original)
 {
+/*
   BasicBlock *call_bb = call_->getParent();
 
   outs() << "Correcting frequency for block: " << bb->getParent()->getName() << "/";
@@ -551,4 +549,6 @@ double Points2_analysis::correct_freq(BasicBlock *ref, BasicBlock *bb, bool orig
   }
   if (original) corrected_freqs_[ref][bb] *= pass_.get_local_block_frequency(bb); //? / total_bfreq;
   return corrected_freqs_[ref][bb];// TODO: * ratio;
+*/
+  return 0;
 }

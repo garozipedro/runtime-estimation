@@ -67,9 +67,9 @@ llvm::PreservedAnalyses EstimateCostPass::run(llvm::Module &module, llvm::Module
   for (auto &f : module) ++fcount;
   outs() << "There are " << fcount << " functions to be analyzed.\n";
 
-  outs() << "\n********************[ Running Wu & Larus ]********************\n\n";
+  outs() << "\n\n********************[ Running Wu & Larus ]********************\n";
   wu_larus_ = &mam.getResult<FunctionCallFrequencyPass>(module);
-  outs() << "\n********************[ Ran Wu & Larus ]********************\n\n";
+  outs() << "\n\n********************[ Ran Wu & Larus ]********************\n";
   for (Function &fun : module) {
     if (fun.empty()) continue;
     outs() << "Function [" << fun.getName() << "]\n";
