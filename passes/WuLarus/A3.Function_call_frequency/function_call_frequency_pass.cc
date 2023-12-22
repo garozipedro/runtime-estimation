@@ -70,7 +70,6 @@ private:
 
   FunctionCallFrequencyPass &pass_; // We need local block and edge frequency info.
   CallInst *call_; // The indirect call instruction whose pointer operand we are mapping to actual functions.
-  map<BasicBlock *, BasicBlock *> returns_ = {}; // Artificial edge between caller and callee's return.
   map<Function *, double> result_;
 };
 
@@ -443,6 +442,7 @@ void Points2_analysis::trace(Instruction *ref, Trace_map &result)
   get_ancestors(ref_ancestors, ref->getParent());
   while (!instructions.empty()) {
     Instruction *curri = instructions.back();
+    BasicBlock *curri_bb = curri->getParent();
     instructions.pop_back();
     {// Print.
       debs << "-> [" << print(curri) << "]\n";
@@ -476,11 +476,10 @@ void Points2_analysis::trace(Instruction *ref, Trace_map &result)
     } else if (auto *load_instr = dyn_cast<LoadInst>(curri)) {// Follow load operand.
       if (curri != ref) {
         debs << "Got another load instruction!\n";
-        BasicBlock *load_bb = load_instr->getParent();
         Trace_map new_map;
         trace(curri, new_map);
         for (auto &it : new_map) // Merge all May_points in this block.
-          result[load_bb].insert(result[load_bb].end(), it.second.begin(), it.second.end());
+          result[curri_bb].insert(result[curri_bb].end(), it.second.begin(), it.second.end());
       } else {
         debs << "Pushing Load operand [" << *load_instr->getPointerOperand() << "]\n";
         instructions.push_back(dyn_cast<Instruction>(load_instr->getPointerOperand()));
@@ -488,20 +487,23 @@ void Points2_analysis::trace(Instruction *ref, Trace_map &result)
     } else if (auto *call_instr = dyn_cast<CallInst>(curri)) {// Follow call's return.
       if (Function *callee = dyn_cast<Function>(call_instr->getCalledOperand())) {
         for (BasicBlock &bb : *callee) {
-          ref_ancestors.insert(&bb); // All BB from this function are now ancestors to the caller.
-          for (Instruction &inst : bb)
-            if (auto *ret = dyn_cast<ReturnInst>(&inst)) {// Get function's return instruction.
-              returns_[&bb] = call_instr->getParent();
-              if (auto *instr = dyn_cast<Instruction>(ret->getReturnValue())) {
-                debs << "Pushing function's return instruction: " << print(instr) << "\n";
-                instructions.push_back(instr);
-              } else if (auto *func = dyn_cast<Function>(ret->getReturnValue())) {
-                debs << "Function's return value is final: " << print(func) << "\n";
-//                result[ref->getParent()].emplace(curri->getParent(), func);
-              }
+          if (auto *ret = dyn_cast<ReturnInst>(bb.getTerminator())) {// Check if block ends with a return.
+            if (auto *instr = dyn_cast<Instruction>(ret->getReturnValue())) {// TODO: memoize.
+              debs << "Pushing function's return operand: " << print(instr) << "\n";
+              Trace_map new_map;
+              trace(instr, new_map);
+              for (auto &it : new_map)
+                result[curri_bb].insert(result[curri_bb].end(), it.second.begin(), it.second.end());
+            } else if (auto *func = dyn_cast<Function>(ret->getReturnValue())) {
+              debs << "Function's return value is final: " << print(func) << "\n";
+              result[curri_bb].push_back(make_pair(func, 1));
             }
+          }
         }
       }
+    } else {// Unhandled instruction.
+      errs() << "Couldn't handle Instruction: " << print(curri) << '\n';
+      abort();
     }
   }
   Bfreqs bfreqs;
@@ -526,34 +528,19 @@ double Points2_analysis::correct_freq(
   }
   // If we got to ref, the frequency is bfreq(bb);
   // otherwise start as 0 and sum from successors' corrected frequency (DFS).
-  if (bb == ref) {
-    debs << "bb == ref\n";
-    return bfreqs[bb] = 1;//pass_.get_local_block_frequency(bb);
-  }
+  if (bb == ref) return bfreqs[bb] = 1;
   else bfreqs[bb] = 0;
   for (BasicBlock *succ : successors(bb)) {
     debs << "Successor: " << print(bb) << "//" << print(succ) << '\n';
     if (!(ancestors.count(succ)) // The successor is not an ancestor to ref.
         || (trace.count(succ)) // The successor overwrites bb effect.
     ) { continue; } // Skip the successor if any of the coditions above were met.
-//    if (bfreqs.count(succ)) { // We found a path ta reaches the call.
-//      outs() << "Path to call found\n";
-//      corrected_freqs_[ref][bb] += pass_.get_local_edge_frequency(bb, succ);
-//    } else { // DFS to correct successor.
     else {
       debs << "DFS to successor\n";
       bfreqs[bb] += (pass_.get_local_edge_frequency(bb, succ) /  pass_.get_local_block_frequency(bb))
         * correct_freq(bfreqs, trace, ancestors, ref, succ, false);
     }
   }
-  /*
-  if (returns_.count(bb)) {// This block has a return, so it's callers are it's successors.
-    outs() << "Return to [";
-    print(returns_[bb]);
-    outs() << "]\n";
-    corrected_freqs_[ref][bb] += pass_.get_local_block_frequency(bb) * correct_freq(ref, returns_[bb], false);
-  }
-  */
   if (original) bfreqs[bb] *= pass_.get_local_block_frequency(bb);
   return bfreqs[bb];// TODO: * ratio;
 }
