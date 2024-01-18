@@ -65,7 +65,7 @@ private:
   // Map all basic blocks that may set the function called by call.
   void trace(Instruction *ref, Trace_map &traced);
   // Trace function params.
-  Function *trace_args(Instruction *ref, CallInst *call);
+  void trace_args(Instruction *ref, CallInst *call, Trace_map &traced);
 
   // Correct block frequency when other successor block overwrites the its effects.
   double correct_freq(
@@ -413,15 +413,12 @@ Points2_analysis::Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *ca
        << "\n************************************************************\n";
   Trace_map top_trace;
   trace(dyn_cast<Instruction>(call_->getCalledOperand()), top_trace);
-/*
-  {// Push corrected frequencies to result_.
-    for (const auto &it : function_map_) {
-      if (!it.second) continue; // Don't push null.
-      if (!result_.count(it.second)) result_[it.second] = 0;
-      result_[it.second] += corrected_freqs_[ref][jt.first];
+  // Sum frequencies in final result.
+  for (const auto &it : top_trace) {
+    for (const auto &jt : it.second) {
+      if (jt.first) result_[jt.first] += jt.second;
     }
   }
-*/
 }
 
 map<Function *, double> &Points2_analysis::get_result() { return result_; }
@@ -453,22 +450,16 @@ void Points2_analysis::trace(Instruction *ref, Trace_map &result)
     // TODO: switch on curri->opcode.
     if (auto *alloca_instr = dyn_cast<AllocaInst>(curri)) {// Follow stores to alloca's value.
       map<BasicBlock *, StoreInst *> stores;
-      map<BasicBlock *, CallInst *> calls;
+      map<BasicBlock *, vector<CallInst *>> calls; // A call may not set the param, so we need a stack of all calls.
       CallInst *call_arg = nullptr; // The alloca instr is passed as argument to another function, which may set it.
       for (User *user : alloca_instr->users()) {
         debs << "USER: " << *user << "\n";
         if (auto *call_instr = dyn_cast<CallInst>(user)) {// Possible store in called function.
           if ((call_instr->getParent() == ref->getParent() && !call_instr->comesBefore(ref)) ||
-              !ref_ancestors.count(call_instr->getParent())) continue;
-          bool insert_call_cond =
-            !calls.count(call_instr->getParent()) || // There is no other call instruction in the same BB.
-            calls[call_instr->getParent()]->comesBefore(call_instr); // call_instr overwrites previous call from BB.
-          if (insert_call_cond) {
-            debs << "Pushing call: " << print(call_instr) << "]\n";
-            calls[call_instr->getParent()] = call_instr;
-//          set_in_param = trace_args(alloca_instr, call_instr);
-//          result[call_instr->getParent()].push_back(make_pair(func, 1));
-          }
+              !ref_ancestors.count(call_instr->getParent())) continue; // Skip if the instruction comes after ref use.
+          // Stack all calls, later we check if from the latest if it overwrites ref.
+          debs << "Pushing call: " << print(call_instr) << "]\n";
+          calls[call_instr->getParent()].push_back(call_instr);
         } else if (auto *store_instr = dyn_cast<StoreInst>(user)) {
           if ((store_instr->getParent() == ref->getParent() && !store_instr->comesBefore(ref)) ||
               !ref_ancestors.count(store_instr->getParent())) continue;
@@ -481,18 +472,29 @@ void Points2_analysis::trace(Instruction *ref, Trace_map &result)
           }
         }
       }
-      for (auto &store : stores) {// Filter final (function or NULL) and non final stores.
-        const auto &it = calls.find(store.first); // Check if a call overwrites the store.
-        if (it != calls.end() && store.second->comesBefore(it->second)) {
-          if (Function *traced = trace_args(alloca_instr, it->second)) {
-            result[store.first].push_back(make_pair(traced, 1));
-            continue;
+      for (auto &it : calls) {// TODO: LIFO.
+        debs << print(it.first) << " -> \n";
+        for (auto call : it.second) {
+          if (stores.count(it.first) && call->comesBefore(stores[it.first])) continue;
+          debs << *call << "\n";
+          Trace_map new_map;
+          trace_args(alloca_instr, call, new_map);
+          if (!new_map.empty()) {// This block sets the alloca.
+            stores.erase(it.first);
+            debs << "Merging result...\n";
+            debs << "Before = \n" << print(result);
+            for (auto &it : new_map) {// Merge all May_points in this block.
+              result[curri_bb].insert(result[curri_bb].end(), it.second.begin(), it.second.end());
+            }
+            debs << "\nAfter = \n" << print(result);
+            break;
           }
         }
+      }
+      for (auto &store : stores) {// Filter final (function or NULL) and non final stores.
         if (auto *instr = dyn_cast<Instruction>(store.second->getValueOperand())) {
           instructions.push_back(instr);
         } else {
-//          if (!result.count(store.first)) result[store.first] = May_point();
           result[store.first].push_back(make_pair(dyn_cast<Function>(store.second->getValueOperand()), 1));
           debs << "Inserting: " << print(store.second) << "\n";
         }
@@ -563,52 +565,70 @@ void get_aliases(Instruction *instr, set<Instruction *> &aliases)
   }
 }
 
-Function *Points2_analysis::trace_args(Instruction *ref, CallInst *call)
+// When tracing the argument passed to a function call, find all of its aliases and then trace normally.
+void Points2_analysis::trace_args(Instruction *ref, CallInst *call, Trace_map &result)
 {
-  Function *result = nullptr;
   debs << "Call args:\n";
-//  vector<int> args_to_trace;
-  int arg_count = 0;
-  // Get the argument indexes (may be passed more than once) of the traced Value.
+  int arg_pos = 0;
+  // Get the argument index of the traced Value.
   for (auto &arg : call->args()) {
     if (arg == ref) {
-      debs << "arg: " << *arg << '\n';
       break;
-//      args_to_trace.push_back(arg_count);
-    } ++arg_count;
+    } ++arg_pos;
   }
   // TODO: if (call->isIndirectCall()) {} else {...
-  // Find where the param is store and trace the location.
+  // Find where the param is stored and trace the location.
   Function *function = call->getCalledFunction();
   debs << "trace_params: " << print(function) << '\n';
   set<Instruction *> aliases;
-//  for (int i : args_to_trace) {
-//  Argument *arg = function->getArg(i);
-  set<Argument *> args;
-  Argument *arg = function->getArg(arg_count);
-  args.insert(arg);
-  debs << "arg [" << arg_count << "]: " << *arg << '\n';
+  Argument *arg = function->getArg(arg_pos);
+  debs << "arg [" << arg_pos << "]: " << *arg << '\n';
+  Instruction *first_alias = nullptr;
   for (User *user : arg->users()) {
     debs << "user: " << *user << '\n';
     if (StoreInst *store = dyn_cast<StoreInst>(user)) {
-      assert(store->getPointerOperand() != arg);
       assert(store->getValueOperand() == arg);
-      get_aliases(dyn_cast<Instruction>(store->getPointerOperand()), aliases);
+      get_aliases(first_alias = dyn_cast<Instruction>(store->getPointerOperand()), aliases);
     }
   }
-//  }
+
+  // Trace the store value to each alias.
+  debs << "-----------------------------\n";
   for (const auto &alias : aliases) {
+    if (alias == first_alias) continue;
+    debs << "Alias: " << *alias << '\n';
     for (User *user : alias->users()) {
+      // TODO: trace_args if user is a call.
+      debs << "User: " << *user << '\n';
+//      trace(dyn_cast<Instruction>(user), result);
       if (StoreInst *store = dyn_cast<StoreInst>(user)) {
-        if (!args.count(dyn_cast<Argument>(store->getValueOperand()))) {
-          debs << "Store to alias: " << *store << '\n';
-          result = dyn_cast<Function>(store->getValueOperand());
-        }
+        debs << "Store to alias: " << *store << '\n';
+        BasicBlock *store_bb = store->getParent();
+        if (Instruction *instr = dyn_cast<Instruction>(store->getValueOperand())) {
+          Trace_map new_map;
+          trace(instr, new_map);
+          for (auto &it : new_map) // Merge all May_points in this block.
+            result[store_bb].insert(result[store_bb].end(), it.second.begin(), it.second.end());
+        } else result[store_bb].push_back(make_pair(dyn_cast<Function>(store->getValueOperand()), 1));
+      } else if (auto *call_instr = dyn_cast<CallInst>(user)) {
+        BasicBlock *pbb = call_instr->getParent();
+        Trace_map new_map;
+        trace_args(alias, call_instr, new_map);
+        for (auto &it : new_map) // Merge all May_points in this block.
+          result[pbb].insert(result[pbb].end(), it.second.begin(), it.second.end());
       }
     }
   }
+  Bfreqs bfreqs;
+  BasicBlock &ret_bb = function->back();
+  Ancestors ret_ancestors;
+  get_ancestors(ret_ancestors, &ret_bb);
+  for (auto &it : result) {
+    double freq = correct_freq(bfreqs, result, ret_ancestors, &ret_bb, it.first, true);
+    for (auto &jt : it.second) jt.second *= freq;
+  }
+
   debs << "end trace\n";
-  return result;
 }
 
 double Points2_analysis::correct_freq(
