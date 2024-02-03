@@ -12,16 +12,19 @@ using Bfreqs    = map<BasicBlock *, double>;
 
 // Trace data.
 //----------------------------------------------------------------------------------------------------------------------
-enum class Arg_pos : int {trace_return = -1};
-using Instruction_data = variant<monostate, Arg_pos>;
+enum class Arg_pos : int { trace_return = -1 };
+enum class Trace_dir { regular, reverse };
+using Instruction_data = variant<monostate, Arg_pos, Trace_dir>;
 using Tinstr = pair<Instruction *, Instruction_data>;
 
 #include "prints.cc"
 
 struct Trace_data {
-  Trace_data(Instruction *ref) : ref_{ref} { assert(ref); }
+  Trace_data(Instruction *ref) : ref_{ref}, first_instr_{ref} { assert(ref); }
+  Trace_data(Instruction *ref, Instruction *first) : ref_{ref}, first_instr_{first} { assert(ref && first); }
 
   Instruction *ref() const { return ref_; }
+  Instruction *first_instr() const { return first_instr_; }
   Bfreqs &bfreqs() { return bfreqs_; }
   Trace_map &trace() { return trace_; }
 
@@ -31,14 +34,9 @@ struct Trace_data {
 
   Tinstr get_instr() {
     if (instructions_.empty()) return{ nullptr, {} };
-    auto result = instructions_.back();
+    auto result{ instructions_.back() };
     instructions_.pop_back();
     return result;
-  }
-
-  void push_instr(Instruction *instr) {
-    assert(instr);
-    instructions_.push_back({instr, {}});
   }
 
   void push_instr(Instruction *instr, Instruction_data data) {
@@ -70,8 +68,8 @@ struct Trace_data {
 
   // Merge src trace to trace_[bb].
   void merge_trace(BasicBlock *bb, const Trace_data &src) {
-    auto &dst = trace_[bb];
-    auto &trace = src.trace_;
+    auto &dst{ trace_[bb] };
+    auto &trace{ src.trace_ };
     for (const auto &[_, vec] : trace) // Merge all Call_freqs to dst.
       dst.insert(dst.end(), vec.begin(), vec.end());
   }
@@ -96,7 +94,7 @@ struct Trace_data {
   }
 
 private:
-  Instruction *ref_ = nullptr;
+  Instruction *ref_, *first_instr_;
   deque<Tinstr> instructions_;
   Ancestors ref_ancestors_;
   Trace_map trace_;
@@ -117,12 +115,13 @@ private:
   void merge_traces(vector<Call_freq> &dst, const Trace_map &src);
 
   // Map all basic blocks that may set the function called by call.
-  void trace_main(Trace_data &data);
-  void trace(Trace_data &data, AllocaInst *instr);
-  void trace(Trace_data &data, LoadInst *instr);
-  void trace(Trace_data &data, StoreInst *instr);
+  void trace_main(Trace_data &data, Instruction_data idata);
+  void trace(Trace_data &data, AllocaInst *instr, Instruction_data idata);
+  void trace(Trace_data &data, LoadInst *instr, Instruction_data idata);
+  void trace(Trace_data &data, StoreInst *instr, Instruction_data idata);
   void trace(Trace_data &data, CallInst *instr, Instruction_data idata);
-  void trace(Trace_data &data, GepInst *instr);
+  void trace(Trace_data &data, Argument *arg, Instruction_data idata);
+  void trace(Trace_data &data, GepInst *instr, Instruction_data idata);
 
   // Trace function params.
   void trace_args(Instruction *ref, CallInst *call, Trace_map &traced);
@@ -172,7 +171,7 @@ Points2_analysis::Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *ca
        << "***[ Tracing indirect call: " << print(call) << "]***"
        << "\n************************************************************\n";
   Trace_data data{ dyn_cast<Instruction>(call->getCalledOperand()) };
-  trace_main(data);
+  trace_main(data, Trace_dir::regular);
   debs << "Final trace data:\n" << data;
   data.sum_trace(result_);
 }
@@ -181,24 +180,24 @@ map<Function *, double> &Points2_analysis::get_result() { return result_; }
 
 // Trace main.
 //----------------------------------------------------------------------------------------------------------------------
-void Points2_analysis::trace_main(Trace_data &data)
+void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
 {
   assert(data.ok());
-  data.push_instr(data.ref()); // Set ref as first instruction to be traced.
+  data.push_instr(data.first_instr(), idata);
   data.add_ancestors(data.ref()->getParent());
   debs << "\nTracing [" << print(data.ref()) << "]\n";
   debs << "************************************************************\n";
   while (data.has_instructions()) {
     debs << data;
-    auto [instr, idata] = data.get_instr();
-    BasicBlock  *instr_bb = instr->getParent();
+    auto [instr, idata]{ data.get_instr() };
+    BasicBlock  *instr_bb{ instr->getParent() };
     debs << "Current instruction = [" << print(instr) << "]\n";
     switch (instr->getOpcode()) {
-    case Instruction::Alloca:        trace(data, dyn_cast<AllocaInst>(instr)); break;
-    case Instruction::Load:          trace(data, dyn_cast<LoadInst  >(instr)); break;
-    case Instruction::Store:         trace(data, dyn_cast<StoreInst >(instr)); break;
+    case Instruction::Alloca:        trace(data, dyn_cast<AllocaInst>(instr), idata); break;
+    case Instruction::Load:          trace(data, dyn_cast<LoadInst  >(instr), idata); break;
+    case Instruction::Store:         trace(data, dyn_cast<StoreInst >(instr), idata); break;
     case Instruction::Call:          trace(data, dyn_cast<CallInst  >(instr), idata); break;
-    case Instruction::GetElementPtr: trace(data, dyn_cast<GepInst   >(instr)); break;
+    case Instruction::GetElementPtr: trace(data, dyn_cast<GepInst   >(instr), idata); break;
     default:
       errs() << "Couldn't handle instruction: " << instr->getOpcode() << " (" << instr->getOpcodeName() << ")\n";
       abort();
@@ -206,99 +205,171 @@ void Points2_analysis::trace_main(Trace_data &data)
   }
   Bfreqs bfreqs{}; // Used for memoization by correct_freq.
   for (auto &[bb, vec] : data.trace()) {// Correct the frequency of each block that has call freqs.
-    double corrected_freq = correct_freq(data, bb, true);
+    double corrected_freq{ correct_freq(data, bb, true) };
     for (auto &[_, freq] : vec) freq *= corrected_freq;
   }
 }
 
 // Trace alloca.
 //----------------------------------------------------------------------------------------------------------------------
-void Points2_analysis::trace(Trace_data &data, AllocaInst *alloca)
+void Points2_analysis::trace(Trace_data &data, AllocaInst *alloca, Instruction_data idata)
 { assert(alloca);
-  map<BasicBlock *, StoreInst *> stores{}; // Keep only the last StoreInst per BasicBlock.
-  debs << "TRACING ALLOCA\n";
-  for (User *user : alloca->users()) {// Get all stores to this alloca.
-    debs << "USER: " << *user << '\n';
-    if (auto store{ dyn_cast<StoreInst>(user) }) {
-      BasicBlock *store_bb{ store->getParent() };
-      if (// Skip this store given any of the following conditions:
-        (store_bb == data.ref()->getParent() && !store->comesBefore(data.ref())) // Store after use.
-        || !data.is_ancestor(store_bb) // Store is not in an ancestor block.
-      ) continue;
+  if (get<Trace_dir>(idata) == Trace_dir::regular) {
+    map<BasicBlock *, StoreInst *> stores{}; // Keep only the last StoreInst per BasicBlock.
+    debs << "TRACING ALLOCA: regular\n";
+    for (User *user : alloca->users()) {// Get all stores to this alloca.
+      debs << "USER: " << *user << '\n';
+      if (auto store{ dyn_cast<StoreInst>(user) }) {// Handle stores to alloca.
+        BasicBlock *store_bb{ store->getParent() };
+        if (// Skip this store given any of the following conditions:
+          (store_bb == data.ref()->getParent() && !store->comesBefore(data.ref())) // Store after use.
+          || !data.is_ancestor(store_bb) // Store is not in an ancestor block.
+        ) continue;
 
-      // NOTE: here we rely on the fact that llvm user comes in reverse use order (last user is inserted in stores,
-      // so we don't have to check if another store overwrites it).
-      if (!stores.count(store_bb)) {
-        debs << "Pushing store: " << print(store) << "\n";
-        stores[store_bb] = store;
-        data.push_instr(store);
+        // NOTE: here we rely on the fact that llvm user comes in reverse use order (last user is inserted in stores,
+        // so we don't have to check if another store overwrites it).
+        if (!stores.count(store_bb)) {
+          debs << "Pushing store: " << print(store) << "\n";
+          stores[store_bb] = store;
+          data.push_instr(store, Trace_dir::regular);
+        }
+      } else if (auto call{ dyn_cast<CallInst>(user) }) {// Handle calls with alloca as argument.
+        Arg_pos pos{ static_cast<int>(distance(call->arg_begin(), find(call->arg_begin(), call->arg_end(), alloca))) };
+        debs << "Pushing call: " << print(call) << " with arg: " << static_cast<int>(pos) << '\n';
+        data.push_instr(call, pos);
       }
+    }
+  } else {// Reverse
+    debs << "TRACING ALLOCA: reverse\n";
+    for (User *user : alloca->users()) {// Get all stores to this alloca.
+      debs << "USER: " << *user << '\n';
+      if (auto load{ dyn_cast<LoadInst>(user) }) // Handle loads from alloca.
+        data.push_instr(load, Trace_dir::reverse);
     }
   }
 }
 
 // Trace load.
 //----------------------------------------------------------------------------------------------------------------------
-void Points2_analysis::trace(Trace_data &data, LoadInst *load)
+void Points2_analysis::trace(Trace_data &data, LoadInst *load, Instruction_data idata)
 { assert(load);
-  debs << "TRACING LOAD\n";
-  if (load != data.ref()) {// Change of reference instruction.
-    debs << "Tracing new reference load\n";
-    Trace_data load_data{ load };
-    trace_main(load_data);
-    data.merge_trace(load->getParent(), load_data);
-  } else {
-    debs << "Pushing Load operand [" << *load->getPointerOperand() << "]\n";
-    data.push_instr(dyn_cast<Instruction>(load->getPointerOperand()));
+  if (get<Trace_dir>(idata) == Trace_dir::regular) {
+    debs << "TRACING LOAD: regular\n";
+    if (load != data.ref()) {// Change of reference instruction.
+      debs << "Tracing new reference load\n";
+      Trace_data load_data{ load };
+      trace_main(load_data, Trace_dir::regular);
+      data.merge_trace(load->getParent(), load_data);
+    } else {
+      debs << "Pushing Load operand [" << *load->getPointerOperand() << "]\n";
+      data.push_instr(dyn_cast<Instruction>(load->getPointerOperand()), Trace_dir::regular);
+    }
+  } else {// Reverse.
+    for (User *user : load->users()) {
+      debs << "USER: " << *user << '\n';
+      if (auto store{ dyn_cast<StoreInst>(user) }) {
+        data.push_instr(store, Trace_dir::regular);
+      }
+    }
   }
 }
 
 // Trace store.
 //----------------------------------------------------------------------------------------------------------------------
-void Points2_analysis::trace(Trace_data &data, StoreInst *store)
+void Points2_analysis::trace(Trace_data &data, StoreInst *store, Instruction_data idata)
 { assert(store);
-  debs << "TRACING STORE\n";
-  if (CallInst *call = dyn_cast<CallInst>(store->getValueOperand())) {// We must be storing the return of the call.
-    debs << "Pushing call: " << print(call) << '\n';
-    data.push_instr(call, Arg_pos::trace_return);
-  } else if (Instruction *instr = dyn_cast<Instruction>(store->getValueOperand())) {// We need to trace the store operand.
-    debs << "Pushing operand: " << print(instr) << '\n';
-    data.push_instr(instr);
-  } else {// The store is a final value (a function ptr or null).
-    auto func{ dyn_cast<Function>(store->getValueOperand()) };
-    data.add_cfreq(store->getParent(), {func, 1});
+  if (get<Trace_dir>(idata) == Trace_dir::regular) {
+    debs << "TRACING STORE: regular\n";
+    if (auto call{ dyn_cast<CallInst>(store->getValueOperand()) }) {// We must be storing the return of the call.
+      debs << "Pushing call: " << print(call) << '\n';
+      data.push_instr(call, Arg_pos::trace_return);
+    } else if (auto instr{ dyn_cast<Instruction>(store->getValueOperand()) }) {// We need to trace the store operand.
+      debs << "Pushing operand: " << print(instr) << '\n';
+      data.push_instr(instr, Trace_dir::regular);
+    } else {// The store is a final value (a function ptr or null).
+      auto func{ dyn_cast<Function>(store->getValueOperand()) };
+      debs << "Pushing final value: " << print(func) << '\n';
+      data.add_cfreq(store->getParent(), {func, 1});
+    }
+  } else {// Reverse.
+    debs << "TRACING STORE: reverse\n";
+    if (auto instr{ dyn_cast<Instruction>(store->getPointerOperand()) }) {
+      data.push_instr(instr, Trace_dir::reverse);
+    } else {
+      errs() << "Non instr pointer operand?\n";
+      abort();
+    }
   }
 }
 
 // Trace call.
 //----------------------------------------------------------------------------------------------------------------------
+// TODO: indirect call.
 void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data idata)
 { assert(call);
   debs << "TRACING CALL: " << print(call) << '\n';
   if (get<Arg_pos>(idata) == Arg_pos::trace_return) {
     debs << "Tracing return\n";
     if (auto callee{ dyn_cast<Function>(call->getCalledOperand()) }) {
-      BasicBlock &last_bb{ callee->back() };
       auto ret{ dyn_cast<ReturnInst>(callee->back().getTerminator()) };
       assert(ret && "BasicBlock terminator is not a return");
       if (auto instr{ dyn_cast<Instruction>(ret->getReturnValue()) }) {// The return is an instruction.
         debs << "Pushing function's return operand: " << print(instr) << '\n';
         Trace_data call_data{ instr };
-        trace_main(call_data);
+        trace_main(call_data, Trace_dir::regular);
         data.merge_trace(call->getParent(), call_data);
       } else if (auto func{ dyn_cast<Function>(ret->getReturnValue()) }) {// The return is final.
         debs << "Pushing function's return value: " << print(func) << '\n';
         data.add_cfreq(call->getParent(), {func, 1});
       }
     }
-  } else if (int arg_pos{ static_cast<int>(get<Arg_pos>(idata)) }) {
-    debs << "Tracing argument: " << arg_pos << '\n';
+  } else {// Trace argument.
+    debs << "Tracing function argument\n";
+    Function *func{ call->getCalledFunction() };
+    Argument *arg{ func->getArg(static_cast<int>(get<Arg_pos>(idata))) };
+    for (User *user : arg->users()) {
+      debs << "User: " << *user << '\n';
+      if (auto store{ dyn_cast<StoreInst>(user) }) {
+        debs << "STORE\n";
+        Trace_data call_data{ func->back().getTerminator(), store };
+        trace_main(call_data, Trace_dir::reverse);
+        data.merge_trace(call->getParent(), call_data);
+      }
+    }
+  }
+}
+
+// Trace argument.
+//----------------------------------------------------------------------------------------------------------------------
+void Points2_analysis::trace(Trace_data &data, Argument *arg, Instruction_data idata)
+{ assert(arg);
+  debs << "TRACING ARG: " << *arg << '\n';
+  Function *func{ arg->getParent() };
+  debs << "Function: " << print(func) << "\nArgument: " << *arg << '\n';
+  for (User *user : arg->users()) {
+    debs << "User: " << *user << '\n';
+    if (auto store{ dyn_cast<StoreInst>(user) }) {
+      debs << "ValueOperand: " << *store->getValueOperand() << " // "
+           << "PointerOperand: " << *store->getPointerOperand()
+           << '\n';
+      if (auto alloca{ dyn_cast<AllocaInst>(store->getPointerOperand()) }) {
+        for (User *user : alloca->users()) {
+          debs << "User: " << *user << '\n';
+          if (auto load{ dyn_cast<LoadInst>(user) }) {
+            debs << "Following load\n";
+            for (User *user : load->users()) {
+              debs << "User: " << *user << '\n';
+            }
+          }
+        }
+      }
+    }
   }
 }
 
 // Trace gep.
 //----------------------------------------------------------------------------------------------------------------------
-void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep)
+void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep, Instruction_data idata)
 { assert(gep);
   debs << "TRACING GEP\n";
 }
