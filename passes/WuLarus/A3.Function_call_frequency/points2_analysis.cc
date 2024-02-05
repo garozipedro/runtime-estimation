@@ -269,6 +269,10 @@ void Points2_analysis::trace(Trace_data &data, LoadInst *load, Instruction_data 
       debs << "USER: " << *user << '\n';
       if (auto store{ dyn_cast<StoreInst>(user) }) {
         data.push_instr(store, Trace_dir::regular);
+      } else if (auto call{ dyn_cast<CallInst>(user) }) {
+        Arg_pos pos{ static_cast<int>(distance(call->arg_begin(), find(call->arg_begin(), call->arg_end(), load))) };
+        debs << "Pushing call: " << print(call) << " with arg: " << static_cast<int>(pos) << '\n';
+        data.push_instr(call, pos);
       }
     }
   }
@@ -334,34 +338,6 @@ void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data 
         Trace_data call_data{ func->back().getTerminator(), store };
         trace_main(call_data, Trace_dir::reverse);
         data.merge_trace(call->getParent(), call_data);
-      }
-    }
-  }
-}
-
-// Trace argument.
-//----------------------------------------------------------------------------------------------------------------------
-void Points2_analysis::trace(Trace_data &data, Argument *arg, Instruction_data idata)
-{ assert(arg);
-  debs << "TRACING ARG: " << *arg << '\n';
-  Function *func{ arg->getParent() };
-  debs << "Function: " << print(func) << "\nArgument: " << *arg << '\n';
-  for (User *user : arg->users()) {
-    debs << "User: " << *user << '\n';
-    if (auto store{ dyn_cast<StoreInst>(user) }) {
-      debs << "ValueOperand: " << *store->getValueOperand() << " // "
-           << "PointerOperand: " << *store->getPointerOperand()
-           << '\n';
-      if (auto alloca{ dyn_cast<AllocaInst>(store->getPointerOperand()) }) {
-        for (User *user : alloca->users()) {
-          debs << "User: " << *user << '\n';
-          if (auto load{ dyn_cast<LoadInst>(user) }) {
-            debs << "Following load\n";
-            for (User *user : load->users()) {
-              debs << "User: " << *user << '\n';
-            }
-          }
-        }
       }
     }
   }
