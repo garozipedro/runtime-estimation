@@ -178,6 +178,18 @@ Points2_analysis::Points2_analysis(FunctionCallFrequencyPass &pass, CallInst *ca
 
 map<Function *, double> &Points2_analysis::get_result() { return result_; }
 
+// Helper functions.
+//----------------------------------------------------------------------------------------------------------------------
+static bool same_gep_indices(GepInst *a, GepInst *b)
+{
+  auto ait{ a->idx_begin() };
+  auto bit{ b->idx_begin() };
+  do {
+    if (*ait != *bit) return false;
+  } while ((++ait != a->idx_end()) && (++bit != b->idx_end())) ;
+  return true;
+}
+
 // Trace main.
 //----------------------------------------------------------------------------------------------------------------------
 void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
@@ -214,7 +226,7 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
 //----------------------------------------------------------------------------------------------------------------------
 void Points2_analysis::trace(Trace_data &data, AllocaInst *alloca, Instruction_data idata)
 { assert(alloca);
-  if (get<Trace_dir>(idata) == Trace_dir::regular) {
+  if (get<Trace_dir>(idata) == Trace_dir::regular) {// TODO: calls may not set their argument.
     map<BasicBlock *, StoreInst *> stores{}; // Keep only the last StoreInst per BasicBlock.
     debs << "TRACING ALLOCA: regular\n";
     for (User *user : alloca->users()) {// Get all stores to this alloca.
@@ -308,7 +320,6 @@ void Points2_analysis::trace(Trace_data &data, StoreInst *store, Instruction_dat
 
 // Trace call.
 //----------------------------------------------------------------------------------------------------------------------
-// TODO: indirect call.
 void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data idata)
 { assert(call);
   debs << "TRACING CALL: " << print(call) << '\n';
@@ -326,6 +337,8 @@ void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data 
         debs << "Pushing function's return value: " << print(func) << '\n';
         data.add_cfreq(call->getParent(), {func, 1});
       }
+    } else {// TODO: indirect call.
+      abort();
     }
   } else {// Trace argument.
     debs << "Tracing function argument\n";
@@ -347,7 +360,56 @@ void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data 
 //----------------------------------------------------------------------------------------------------------------------
 void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep, Instruction_data idata)
 { assert(gep);
-  debs << "TRACING GEP\n";
+  if (get<Trace_dir>(idata) == Trace_dir::regular) {
+    debs << "TRACING GEP regular\n";
+    Type *gep_type{ gep->getSourceElementType() };
+    debs << "Got a gep: " << *gep
+         << "\n\t->" << *gep->getSourceElementType() << " // "
+         << "\n\t->" << *gep->getResultElementType() << "//"
+         << "\n\t->" << *gep->getPointerOperand() << "//"
+         << "\n\t->" << *gep->getPointerOperandType() << "\n";
+    for (auto &idx : gep->indices()) {
+      debs << "\tIdx: " << *idx << '\n';
+    }
+    if (auto *ty{ dyn_cast<StructType>(gep_type) }) {
+      debs << "Got Struct GEP\n";
+      for (User *user : gep->getPointerOperand()->users()) {
+        auto ugep{ dyn_cast<GepInst>(user) };
+        if (same_gep_indices(ugep, gep)) {// Both access the same field.
+          bool same_block{ ugep->getParent() == gep->getParent() };
+          if ((same_block && ugep->comesBefore(gep))
+              || (!same_block && data.is_ancestor(ugep->getParent()))) {
+            debs << "USER: " << *ugep << '\n';
+            data.push_instr(ugep, Trace_dir::reverse);
+          }
+        }
+      }
+    } else if (auto *ty{ dyn_cast<ArrayType>(gep_type) }) {
+      debs << "Got Array GEP\n";
+    } else if (auto *ty{ dyn_cast<PointerType>(gep_type) }) {
+      debs << "Got Pointer GEP\n";
+    } else {
+      errs() << "Couldn't handle gep's source element type: " << *gep_type << '\n';
+      abort();
+    }
+  } else {// Reverse.
+    debs << "TRACING GEP reverse\n";
+    Type *gep_type{ gep->getSourceElementType() };
+    debs << "Got a gep: " << *gep
+         << "\n\t->" << *gep->getSourceElementType() << " // "
+         << "\n\t->" << *gep->getResultElementType() << "//"
+         << "\n\t->" << *gep->getPointerOperand() << "//"
+         << "\n\t->" << *gep->getPointerOperandType() << "\n";
+    for (auto &idx : gep->indices()) {
+      debs << "\tIdx: " << *idx << '\n';
+    }
+    for (User *user : gep->users()) {
+      debs << "USER: " << *user << '\n';
+      if (auto store{ dyn_cast<StoreInst>(user) }) {
+        data.push_instr(store, Trace_dir::regular);
+      }
+    }
+  }
 }
 
 // Correct freq.
