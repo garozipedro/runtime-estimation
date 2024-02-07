@@ -62,3 +62,13 @@ string print(const Ancestors &ancestors)
   }
   return str;
 }
+
+string print(const Bfreqs &bfreqs)
+{
+  string str;
+  raw_string_ostream ss{str};
+  for (auto [bb, freq] : bfreqs) {
+    ss << print(bb) << " = " << freq << '\n';
+  }
+  return str;
+}

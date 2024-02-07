@@ -69,9 +69,12 @@ struct Trace_data {
   // Merge src trace to trace_[bb].
   void merge_trace(BasicBlock *bb, const Trace_data &src) {
     auto &dst{ trace_[bb] };
-    auto &trace{ src.trace_ };
-    for (const auto &[_, vec] : trace) // Merge all Call_freqs to dst.
+    debs << "BEFORE MERGE = \n"
+         << *this << '\n';
+    for (const auto &[_, vec] : src.trace_) // Merge all Call_freqs to dst.
       dst.insert(dst.end(), vec.begin(), vec.end());
+    debs << "AFTER MERGE = \n"
+         << *this << '\n';
   }
 
   // Sum all Call_freqs to function "foo()" together.
@@ -87,6 +90,7 @@ struct Trace_data {
     os << "Trace_data {\n"
        << "\t.ref = " << print(data.ref_) << '\n'
        << "\t.trace = {\n" << print(data.trace_) << "\t}\n"
+       << "\t.bfreqs = {\n" << print(data.bfreqs_) << "\t}\n"
        << "\t.instructions = {\n" << print(data.instructions_) << "\t}\n"
        << "\t.ancestors = {\n" << print(data.ref_ancestors_) << "\t}\n"
        << "}\n";
@@ -127,7 +131,7 @@ private:
   void trace_args(Instruction *ref, CallInst *call, Trace_map &traced);
 
   // Correct block frequency when other successor block overwrites the its effects.
-  double correct_freq(Trace_data &data, BasicBlock *bb, bool original);
+  double correct_freq(Trace_data &data, BasicBlock *bb);
 
   FunctionCallFrequencyPass &pass_; // We need local block and edge frequency info.
   CallInst *call_; // The indirect call instruction whose pointer operand we are mapping to actual functions.
@@ -200,7 +204,7 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
   debs << "\nTracing [" << print(data.ref()) << "]\n";
   debs << "************************************************************\n";
   while (data.has_instructions()) {
-    debs << data;
+//    debs << data;
     auto [instr, idata]{ data.get_instr() };
     BasicBlock  *instr_bb{ instr->getParent() };
     debs << "Current instruction = [" << print(instr) << "]\n";
@@ -216,10 +220,16 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
     }
   }
   Bfreqs bfreqs{}; // Used for memoization by correct_freq.
+  debs << "***************************************************************************\n"
+       << "CORRECTING FREQS\n";
+  debs << data << '\n';
   for (auto &[bb, vec] : data.trace()) {// Correct the frequency of each block that has call freqs.
-    double corrected_freq{ correct_freq(data, bb, true) };
+    double corrected_freq{ correct_freq(data, bb) };
     for (auto &[_, freq] : vec) freq *= corrected_freq;
   }
+  debs << "CORRECTED FREQS\n"
+       << data << '\n'
+       << "***************************************************************************\n";
 }
 
 // Trace alloca.
@@ -271,6 +281,7 @@ void Points2_analysis::trace(Trace_data &data, LoadInst *load, Instruction_data 
       debs << "Tracing new reference load\n";
       Trace_data load_data{ load };
       trace_main(load_data, Trace_dir::regular);
+      debs << "Tracing done... merging.\n";
       data.merge_trace(load->getParent(), load_data);
     } else {
       debs << "Pushing Load operand [" << *load->getPointerOperand() << "]\n";
@@ -305,7 +316,7 @@ void Points2_analysis::trace(Trace_data &data, StoreInst *store, Instruction_dat
     } else {// The store is a final value (a function ptr or null).
       auto func{ dyn_cast<Function>(store->getValueOperand()) };
       debs << "Pushing final value: " << print(func) << '\n';
-      data.add_cfreq(store->getParent(), {func, 1});
+      data.add_cfreq(store->getParent(), {func, pass_.get_local_block_frequency(store->getParent())});
     }
   } else {// Reverse.
     debs << "TRACING STORE: reverse\n";
@@ -335,7 +346,7 @@ void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data 
         data.merge_trace(call->getParent(), call_data);
       } else if (auto func{ dyn_cast<Function>(ret->getReturnValue()) }) {// The return is final.
         debs << "Pushing function's return value: " << print(func) << '\n';
-        data.add_cfreq(call->getParent(), {func, 1});
+        data.add_cfreq(call->getParent(), {func, pass_.get_local_block_frequency(call->getParent())});
       }
     } else {// TODO: indirect call.
       abort();
@@ -363,14 +374,6 @@ void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep, Instructi
   if (get<Trace_dir>(idata) == Trace_dir::regular) {
     debs << "TRACING GEP regular\n";
     Type *gep_type{ gep->getSourceElementType() };
-    debs << "Got a gep: " << *gep
-         << "\n\t->" << *gep->getSourceElementType() << " // "
-         << "\n\t->" << *gep->getResultElementType() << "//"
-         << "\n\t->" << *gep->getPointerOperand() << "//"
-         << "\n\t->" << *gep->getPointerOperandType() << "\n";
-    for (auto &idx : gep->indices()) {
-      debs << "\tIdx: " << *idx << '\n';
-    }
     if (auto *ty{ dyn_cast<StructType>(gep_type) }) {
       debs << "Got Struct GEP\n";
       for (User *user : gep->getPointerOperand()->users()) {
@@ -394,15 +397,6 @@ void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep, Instructi
     }
   } else {// Reverse.
     debs << "TRACING GEP reverse\n";
-    Type *gep_type{ gep->getSourceElementType() };
-    debs << "Got a gep: " << *gep
-         << "\n\t->" << *gep->getSourceElementType() << " // "
-         << "\n\t->" << *gep->getResultElementType() << "//"
-         << "\n\t->" << *gep->getPointerOperand() << "//"
-         << "\n\t->" << *gep->getPointerOperandType() << "\n";
-    for (auto &idx : gep->indices()) {
-      debs << "\tIdx: " << *idx << '\n';
-    }
     for (User *user : gep->users()) {
       debs << "USER: " << *user << '\n';
       if (auto store{ dyn_cast<StoreInst>(user) }) {
@@ -414,9 +408,10 @@ void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep, Instructi
 
 // Correct freq.
 //----------------------------------------------------------------------------------------------------------------------
-double Points2_analysis::correct_freq(Trace_data &data, BasicBlock *bb, bool original)
+double Points2_analysis::correct_freq(Trace_data &data, BasicBlock *bb)
 {
-  debs << "\nCORRECT_FREQ: " << print(data.ref()) << "//" << print(bb) << "//" << original << '\n';
+  debs << "\nCORRECT_FREQ: ref = " << print(data.ref())
+       << "\n\tBB = " << print(bb) << '\n';
   assert(data.is_ancestor(bb) && "Trying to correct frequency of non predecessor block!");
 
   if (data.bfreqs().count(bb)) {
@@ -435,8 +430,9 @@ double Points2_analysis::correct_freq(Trace_data &data, BasicBlock *bb, bool ori
     ) continue;
     debs << "DFS to successor\n";
     data.bfreqs()[bb] += (pass_.get_local_edge_frequency(bb, succ) /  pass_.get_local_block_frequency(bb))
-      * correct_freq(data, succ, false);
+      * correct_freq(data, succ);
+    debs << "Back from successor with " << data.bfreqs()[bb] << '\n';
   }
-  if (original) data.bfreqs()[bb] *= pass_.get_local_block_frequency(bb);
+  debs << "Returning with " << data.bfreqs()[bb] << '\n';
   return data.bfreqs()[bb];
 }
