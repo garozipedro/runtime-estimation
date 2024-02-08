@@ -3,15 +3,17 @@
 /* Points-to analysis:
  * Improvement to allow Algorithm 3 use calls through pointers when counting local call frequecies.
 ***********************************************************************************************************************/
-using GepInst = llvm::GetElementPtrInst;
 
+// Trace data.
+//----------------------------------------------------------------------------------------------------------------------
+// Some aliases.
+using GepInst = llvm::GetElementPtrInst;
 using Ancestors = set<BasicBlock *>;
 using Call_freq = pair<Function *, double>;
 using Trace_map = map<BasicBlock *, vector<Call_freq>>;
 using Bfreqs    = map<BasicBlock *, double>;
 
-// Trace data.
-//----------------------------------------------------------------------------------------------------------------------
+// Some aditional data needed for tracing the instructions.
 enum class Arg_pos : int { trace_return = -1 };
 enum class Trace_dir { regular, reverse };
 using Instruction_data = variant<monostate, Arg_pos, Trace_dir>;
@@ -78,7 +80,7 @@ struct Trace_data {
   }
 
   // Sum all Call_freqs to function "foo()" together.
-  void sum_trace(map<Function *, double> &dst) {
+  void sum_trace(map<Function *, double> &dst) const {
     for (const auto &[_, vec] : trace_) {
       for (const auto [func, freq] : vec) {
         if (func) dst[func] += freq;
@@ -86,7 +88,7 @@ struct Trace_data {
     }
   }
 
-  //
+  // Correct all frequencies of <trace_> by <correction>.
   void correct_trace(double correction) {
     for (auto &[_, vec] : trace_) {
       for (auto &[_, freq] : vec) freq *= correction;
@@ -133,6 +135,7 @@ private:
   void trace(Trace_data &data, CallInst *instr, Instruction_data idata);
   void trace(Trace_data &data, Argument *arg, Instruction_data idata);
   void trace(Trace_data &data, GepInst *instr, Instruction_data idata);
+  void trace(Trace_data &data, PHINode *instr, Instruction_data idata);
 
   // Trace function params.
   void trace_args(Instruction *ref, CallInst *call, Trace_map &traced);
@@ -211,7 +214,6 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
   debs << "\nTracing [" << print(data.ref()) << "]\n";
   debs << "************************************************************\n";
   while (data.has_instructions()) {
-//    debs << data;
     auto [instr, idata]{ data.get_instr() };
     BasicBlock  *instr_bb{ instr->getParent() };
     debs << "Current instruction = [" << print(instr) << "]\n";
@@ -221,6 +223,7 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
     case Instruction::Store:         trace(data, dyn_cast<StoreInst >(instr), idata); break;
     case Instruction::Call:          trace(data, dyn_cast<CallInst  >(instr), idata); break;
     case Instruction::GetElementPtr: trace(data, dyn_cast<GepInst   >(instr), idata); break;
+    case Instruction::PHI:           trace(data, dyn_cast<PHINode   >(instr), idata); break;
     default:
       errs() << "Couldn't handle instruction: " << instr->getOpcode() << " (" << instr->getOpcodeName() << ")\n";
       abort();
@@ -350,7 +353,7 @@ void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data 
         debs << "Pushing function's return operand: " << print(instr) << '\n';
         Trace_data call_data{ instr };
         trace_main(call_data, Trace_dir::regular);
-        // Calls have special control flow, we need to correct its frequencies acording to caller BB before merging.
+        // Calls have special control flow, we need to correct its frequencies acording to call's BB before merging.
         call_data.correct_trace(pass_.get_local_block_frequency(call->getParent()));
         data.merge_trace(call->getParent(), call_data);
       } else if (auto func{ dyn_cast<Function>(ret->getReturnValue()) }) {// The return is final.
@@ -411,6 +414,27 @@ void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep, Instructi
       if (auto store{ dyn_cast<StoreInst>(user) }) {
         data.push_instr(store, Trace_dir::regular);
       }
+    }
+  }
+}
+
+// Trace phi.
+//----------------------------------------------------------------------------------------------------------------------
+void Points2_analysis::trace(Trace_data &data, PHINode *phi, Instruction_data idata)
+{
+  debs << "TRACING PHI\n";
+  BasicBlock *phi_bb{ phi->getParent() };
+  for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
+    BasicBlock *bb{ phi->getIncomingBlock(i) };
+    Function *func{ dyn_cast<Function>(phi->getIncomingValue(i)) };
+    if (func) {
+      data.add_cfreq(phi_bb, {func, pass_.get_local_edge_frequency(bb, phi_bb)});
+    } else if (auto instr{ dyn_cast<Instruction>(phi->getIncomingValue(i)) }) {
+      Trace_data incoming_data{ instr };
+      trace_main(incoming_data, Trace_dir::regular);
+      data.merge_trace(phi_bb, incoming_data);
+    } else {// NULL.
+      data.add_cfreq(phi_bb, {nullptr, pass_.get_local_edge_frequency(bb, phi_bb)});
     }
   }
 }

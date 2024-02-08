@@ -1,0 +1,158 @@
+## 1
+########################################################################################################################
+%struct.S = type { ptr, ptr }
+
+@s = dso_local global %struct.S { ptr @zero, ptr @one }, align 8
+
+define dso_local i32 @zero() #0 {
+  ret i32 0
+}
+define dso_local i32 @one() #0 {
+  ret i32 1
+}
+
+define dso_local i32 @main(i32 noundef %0, ptr noundef %1) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca ptr, align 8
+  store i32 0, ptr %3, align 4
+  store i32 %0, ptr %4, align 4
+  store ptr %1, ptr %5, align 8
+  %6 = load i32, ptr %4, align 4
+  %7 = icmp sgt i32 %6, 1
+  br i1 %7, label %8, label %11
+8:                                                ; preds = %2
+  %9 = load ptr, ptr @s, align 8
+  %10 = call i32 %9()
+  store i32 %10, ptr %3, align 4
+  br label %14
+11:                                               ; preds = %2
+  %12 = load ptr, ptr getelementptr inbounds (%struct.S, ptr @s, i32 0, i32 1), align 8
+  %13 = call i32 %12()
+  store i32 %13, ptr %3, align 4
+  br label %14
+14:                                               ; preds = %11, %8
+  %15 = load i32, ptr %3, align 4
+  ret i32 %15
+}
+
+## 2
+########################################################################################################################
+%struct.S = type { ptr, ptr }
+
+@s = dso_local global %struct.S { ptr @zero, ptr @one }, align 8
+
+define dso_local i32 @zero() #0 {
+  ret i32 0
+}
+define dso_local i32 @one() #0 {
+  ret i32 1
+}
+
+define dso_local i32 @main(i32 noundef %0, ptr noundef %1) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca ptr, align 8
+  store i32 0, ptr %3, align 4
+  store i32 %0, ptr %4, align 4
+  store ptr %1, ptr %5, align 8
+  %6 = load i32, ptr %4, align 4
+  %7 = icmp sgt i32 %6, 1
+  br i1 %7, label %8, label %10
+8:                                                ; preds = %2
+  %9 = load ptr, ptr getelementptr inbounds (%struct.S, ptr @s, i32 0, i32 1), align 8
+  store ptr %9, ptr @s, align 8
+  br label %10
+10:                                               ; preds = %8, %2
+  %11 = load ptr, ptr @s, align 8
+  %12 = call i32 %11()
+  %13 = load ptr, ptr getelementptr inbounds (%struct.S, ptr @s, i32 0, i32 1), align 8
+  %14 = call i32 %13()
+  %15 = add nsw i32 %12, %14
+  ret i32 %15
+}
+
+## 3
+########################################################################################################################
+%struct.S = type { ptr, ptr }
+
+@__const.main.s = private unnamed_addr constant %struct.S { ptr @zero, ptr @one }, align 8
+
+define dso_local i32 @zero() #0 {
+  ret i32 0
+}
+define dso_local i32 @one() #0 {
+  ret i32 1
+}
+define dso_local i32 @main(i32 noundef %0, ptr noundef %1) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca ptr, align 8
+  %6 = alloca %struct.S, align 8
+  store i32 0, ptr %3, align 4
+  store i32 %0, ptr %4, align 4
+  store ptr %1, ptr %5, align 8
+  call void @llvm.memcpy.p0.p0.i64(ptr align 8 %6, ptr align 8 @__const.main.s, i64 16, i1 false)
+  %7 = load i32, ptr %4, align 4
+  %8 = icmp sgt i32 %7, 1
+  br i1 %8, label %9, label %13
+9:                                                ; preds = %2
+  %10 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 1
+  %11 = load ptr, ptr %10, align 8
+  %12 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 0
+  store ptr %11, ptr %12, align 8
+  br label %13
+
+13:                                               ; preds = %9, %2
+  %14 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 0
+  %15 = load ptr, ptr %14, align 8
+  %16 = call i32 %15()
+  %17 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 1
+  %18 = load ptr, ptr %17, align 8
+  %19 = call i32 %18()
+  %20 = add nsw i32 %16, %19
+  ret i32 %20
+}
+
+
+## 4
+########################################################################################################################
+%struct.S = type { ptr, ptr }
+
+define dso_local i32 @zero() #0 {
+  ret i32 0
+}
+define dso_local i32 @one() #0 {
+  ret i32 1
+}
+define dso_local i32 @main(i32 noundef %0, ptr noundef %1) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca ptr, align 8
+  %6 = alloca %struct.S, align 8
+  store i32 0, ptr %3, align 4
+  store i32 %0, ptr %4, align 4
+  store ptr %1, ptr %5, align 8
+  %7 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 0
+  store ptr @zero, ptr %7, align 8
+  %8 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 1
+  store ptr @one, ptr %8, align 8
+  %9 = load i32, ptr %4, align 4
+  %10 = icmp sgt i32 %9, 1
+  br i1 %10, label %11, label %15
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 1
+  %13 = load ptr, ptr %12, align 8
+  %14 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 0
+  store ptr %13, ptr %14, align 8
+  br label %15
+15:                                               ; preds = %11, %2
+  %16 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 0
+  %17 = load ptr, ptr %16, align 8
+  %18 = call i32 %17()
+  %19 = getelementptr inbounds %struct.S, ptr %6, i32 0, i32 1
+  %20 = load ptr, ptr %19, align 8
+  %21 = call i32 %20()
+  %22 = add nsw i32 %18, %21
+  ret i32 %22
+}
