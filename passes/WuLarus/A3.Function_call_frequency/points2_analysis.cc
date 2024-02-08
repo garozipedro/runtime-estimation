@@ -86,6 +86,13 @@ struct Trace_data {
     }
   }
 
+  //
+  void correct_trace(double correction) {
+    for (auto &[_, vec] : trace_) {
+      for (auto &[_, freq] : vec) freq *= correction;
+    }
+  }
+
   friend raw_ostream &operator<<(raw_ostream &os, const Trace_data &data) {
     os << "Trace_data {\n"
        << "\t.ref = " << print(data.ref_) << '\n'
@@ -343,6 +350,8 @@ void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data 
         debs << "Pushing function's return operand: " << print(instr) << '\n';
         Trace_data call_data{ instr };
         trace_main(call_data, Trace_dir::regular);
+        // Calls have special control flow, we need to correct its frequencies acording to caller BB before merging.
+        call_data.correct_trace(pass_.get_local_block_frequency(call->getParent()));
         data.merge_trace(call->getParent(), call_data);
       } else if (auto func{ dyn_cast<Function>(ret->getReturnValue()) }) {// The return is final.
         debs << "Pushing function's return value: " << print(func) << '\n';
