@@ -130,12 +130,12 @@ private:
   // Map all basic blocks that may set the function called by call.
   void trace_main(Trace_data &data, Instruction_data idata);
   void trace(Trace_data &data, AllocaInst *instr, Instruction_data idata);
-  void trace(Trace_data &data, LoadInst *instr, Instruction_data idata);
-  void trace(Trace_data &data, StoreInst *instr, Instruction_data idata);
-  void trace(Trace_data &data, CallInst *instr, Instruction_data idata);
-  void trace(Trace_data &data, Argument *arg, Instruction_data idata);
-  void trace(Trace_data &data, GepInst *instr, Instruction_data idata);
-  void trace(Trace_data &data, PHINode *instr, Instruction_data idata);
+  void trace(Trace_data &data, LoadInst   *instr, Instruction_data idata);
+  void trace(Trace_data &data, StoreInst  *instr, Instruction_data idata);
+  void trace(Trace_data &data, CallInst   *instr, Instruction_data idata);
+  void trace(Trace_data &data, GepInst    *instr, Instruction_data idata);
+  void trace(Trace_data &data, PHINode    *instr, Instruction_data idata);
+  void trace(Trace_data &data, SelectInst *instr, Instruction_data idata);
 
   // Trace function params.
   void trace_args(Instruction *ref, CallInst *call, Trace_map &traced);
@@ -200,7 +200,7 @@ static bool same_gep_indices(GepInst *a, GepInst *b)
   auto bit{ b->idx_begin() };
   do {
     if (*ait != *bit) return false;
-  } while ((++ait != a->idx_end()) && (++bit != b->idx_end())) ;
+  } while ((++ait != a->idx_end()) && (++bit != b->idx_end()));
   return true;
 }
 
@@ -224,6 +224,7 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
     case Instruction::Call:          trace(data, dyn_cast<CallInst  >(instr), idata); break;
     case Instruction::GetElementPtr: trace(data, dyn_cast<GepInst   >(instr), idata); break;
     case Instruction::PHI:           trace(data, dyn_cast<PHINode   >(instr), idata); break;
+    case Instruction::Select:        trace(data, dyn_cast<SelectInst>(instr), idata); break;
     default:
       errs() << "Couldn't handle instruction: " << instr->getOpcode() << " (" << instr->getOpcodeName() << ")\n";
       abort();
@@ -431,11 +432,25 @@ void Points2_analysis::trace(Trace_data &data, PHINode *phi, Instruction_data id
       data.add_cfreq(phi_bb, {func, pass_.get_local_edge_frequency(bb, phi_bb)});
     } else if (auto instr{ dyn_cast<Instruction>(phi->getIncomingValue(i)) }) {
       Trace_data incoming_data{ instr };
-      trace_main(incoming_data, Trace_dir::regular);
+      if (dyn_cast<CallInst>(instr)) trace_main(incoming_data, Arg_pos::trace_return);
+      else trace_main(incoming_data, Trace_dir::regular);
       data.merge_trace(phi_bb, incoming_data);
     } else {// NULL.
       data.add_cfreq(phi_bb, {nullptr, pass_.get_local_edge_frequency(bb, phi_bb)});
     }
+  }
+}
+
+// Trace select.
+//----------------------------------------------------------------------------------------------------------------------
+void Points2_analysis::trace(Trace_data &data, SelectInst *select, Instruction_data idata)
+{
+  debs << "TRACING SELECT\n";
+  BasicBlock *select_bb{ select->getParent() };
+  double half_freq = pass_.get_local_block_frequency(select_bb) / 2;
+  array<Function *, 2> funcs{ dyn_cast<Function>(select->getTrueValue()), dyn_cast<Function>(select->getFalseValue()) };
+  for (Function *func : funcs) {// Select values are of first class types, so they can't be instructions.
+    data.add_cfreq(select_bb, {func, half_freq});
   }
 }
 
