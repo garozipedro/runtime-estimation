@@ -36,8 +36,8 @@ struct Trace_data {
 
   Tinstr get_instr() {
     if (instructions_.empty()) return{ nullptr, {} };
-    auto result{ instructions_.back() };
-    instructions_.pop_back();
+    auto result{ instructions_.front() };
+    instructions_.pop_front();
     return result;
   }
 
@@ -70,13 +70,11 @@ struct Trace_data {
 
   // Merge src trace to trace_[bb].
   void merge_trace(BasicBlock *bb, const Trace_data &src) {
-    auto &dst{ trace_[bb] };
-    debs << "BEFORE MERGE = \n"
-         << *this << '\n';
-    for (const auto &[_, vec] : src.trace_) // Merge all Call_freqs to dst.
-      dst.insert(dst.end(), vec.begin(), vec.end());
-    debs << "AFTER MERGE = \n"
-         << *this << '\n';
+    if (!src.trace_.empty()) {
+      auto &dst{ trace_[bb] };
+      for (const auto &[_, vec] : src.trace_) // Merge all Call_freqs to dst.
+        dst.insert(dst.end(), vec.begin(), vec.end());
+    }
   }
 
   // Sum all Call_freqs to function "foo()" together.
@@ -208,6 +206,7 @@ static bool same_gep_indices(GepInst *a, GepInst *b)
 //----------------------------------------------------------------------------------------------------------------------
 void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
 {
+  static array<unsigned, 4> write_opcodes{ Instruction::Store, Instruction::Call, Instruction::PHI, Instruction::Select };
   assert(data.ok());
   data.push_instr(data.first_instr(), idata);
   data.add_ancestors(data.ref()->getParent());
@@ -216,6 +215,11 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
   while (data.has_instructions()) {
     auto [instr, idata]{ data.get_instr() };
     BasicBlock  *instr_bb{ instr->getParent() };
+
+    // Skip instruction if it's block already has a cfreq.
+    if ((find(write_opcodes.begin(), write_opcodes.end(), instr->getOpcode()) != write_opcodes.end())
+        && (data.has_trace(instr_bb))) continue;
+
     debs << "Current instruction = [" << print(instr) << "]\n";
     switch (instr->getOpcode()) {
     case Instruction::Alloca:        trace(data, dyn_cast<AllocaInst>(instr), idata); break;
@@ -231,24 +235,20 @@ void Points2_analysis::trace_main(Trace_data &data, Instruction_data idata)
     }
   }
   Bfreqs bfreqs{}; // Used for memoization by correct_freq.
-  debs << "***************************************************************************\n"
-       << "CORRECTING FREQS\n";
-  debs << data << '\n';
   for (auto &[bb, vec] : data.trace()) {// Correct the frequency of each block that has call freqs.
     double corrected_freq{ correct_freq(data, bb) };
     for (auto &[_, freq] : vec) freq *= corrected_freq;
   }
-  debs << "CORRECTED FREQS\n"
-       << data << '\n'
-       << "***************************************************************************\n";
 }
 
 // Trace alloca.
 //----------------------------------------------------------------------------------------------------------------------
 void Points2_analysis::trace(Trace_data &data, AllocaInst *alloca, Instruction_data idata)
 { assert(alloca);
-  if (get<Trace_dir>(idata) == Trace_dir::regular) {// TODO: calls may not set their argument.
+  using Cinstr = pair<CallInst *, Instruction_data>;
+  if (get<Trace_dir>(idata) == Trace_dir::regular) {
     map<BasicBlock *, StoreInst *> stores{}; // Keep only the last StoreInst per BasicBlock.
+    map<BasicBlock *, vector<Cinstr>> calls{}; // Calls may not write to the alloca, so a stack is needed.
     debs << "TRACING ALLOCA: regular\n";
     for (User *user : alloca->users()) {// Get all stores to this alloca.
       debs << "USER: " << *user << '\n';
@@ -270,6 +270,7 @@ void Points2_analysis::trace(Trace_data &data, AllocaInst *alloca, Instruction_d
         Arg_pos pos{ static_cast<int>(distance(call->arg_begin(), find(call->arg_begin(), call->arg_end(), alloca))) };
         debs << "Pushing call: " << print(call) << " with arg: " << static_cast<int>(pos) << '\n';
         data.push_instr(call, pos);
+        calls[call->getParent()].push_back({call, pos});
       }
     }
   } else {// Reverse
@@ -371,7 +372,6 @@ void Points2_analysis::trace(Trace_data &data, CallInst *call, Instruction_data 
     for (User *user : arg->users()) {
       debs << "User: " << *user << '\n';
       if (auto store{ dyn_cast<StoreInst>(user) }) {
-        debs << "STORE\n";
         Trace_data call_data{ func->back().getTerminator(), store };
         trace_main(call_data, Trace_dir::reverse);
         data.merge_trace(call->getParent(), call_data);
@@ -458,12 +458,12 @@ void Points2_analysis::trace(Trace_data &data, SelectInst *select, Instruction_d
 //----------------------------------------------------------------------------------------------------------------------
 double Points2_analysis::correct_freq(Trace_data &data, BasicBlock *bb)
 {
-  debs << "\nCORRECT_FREQ: ref = " << print(data.ref())
-       << "\n\tBB = " << print(bb) << '\n';
+  // debs << "\nCORRECT_FREQ: ref = " << print(data.ref())
+  //      << "\n\tBB = " << print(bb) << '\n';
   assert(data.is_ancestor(bb) && "Trying to correct frequency of non predecessor block!");
 
   if (data.bfreqs().count(bb)) {
-    debs << "Found memoized correction: " << data.bfreqs()[bb] << "\n";
+//    debs << "Found memoized correction: " << data.bfreqs()[bb] << "\n";
     return data.bfreqs()[bb]; // Memoized.
   }
   // If we got to ref, the frequency is bfreq(bb);
@@ -471,16 +471,16 @@ double Points2_analysis::correct_freq(Trace_data &data, BasicBlock *bb)
   if (bb == data.ref()->getParent()) return data.bfreqs()[bb] = 1;
   else data.bfreqs()[bb] = 0;
   for (BasicBlock *succ : successors(bb)) {
-    debs << "Successor: " << print(bb) << "//" << print(succ) << '\n';
+//    debs << "Successor: " << print(bb) << "//" << print(succ) << '\n';
     if (// Skip the successor if any of the coditions are met.
       !(data.is_ancestor(succ)) // The successor is not an ancestor to ref.
       || (data.has_trace(succ)) // The successor overwrites bb effect.
     ) continue;
-    debs << "DFS to successor\n";
+//    debs << "DFS to successor\n";
     data.bfreqs()[bb] += (pass_.get_local_edge_frequency(bb, succ) /  pass_.get_local_block_frequency(bb))
       * correct_freq(data, succ);
-    debs << "Back from successor with " << data.bfreqs()[bb] << '\n';
+//    debs << "Back from successor with " << data.bfreqs()[bb] << '\n';
   }
-  debs << "Returning with " << data.bfreqs()[bb] << '\n';
+//  debs << "Returning with " << data.bfreqs()[bb] << '\n';
   return data.bfreqs()[bb];
 }
