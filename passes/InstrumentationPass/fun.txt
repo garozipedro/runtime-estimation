@@ -1,0 +1,12 @@
+Function [in_prefix]
+	BB [0] / RUNS = 7422 / PAUSES = 7422 / CYCLES = 8553542 / AVG = 1152.46
+Function [permute_next_pos]
+	BB [0] / RUNS = 1237 / PAUSES = 10615 / CYCLES = 5705000 / AVG = 4611.96
+Function [permute]
+	BB [0] / RUNS = 1957 / PAUSES = 3914 / CYCLES = 3055302 / AVG = 1561.22
+Function [atoi_]
+	BB [0] / RUNS = 1 / PAUSES = 1 / CYCLES = 3759 / AVG = 3759
+Function [report_one]
+	BB [0] / RUNS = 720 / PAUSES = 5760 / CYCLES = 3084666 / AVG = 4284.26
+Function [main]
+	BB [0] / RUNS = 1 / PAUSES = 4 / CYCLES = 23986 / AVG = 23986

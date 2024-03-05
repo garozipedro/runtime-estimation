@@ -1,0 +1,230 @@
+Instrumentation_data:
+  - Function:
+      Name: report_one
+      BasicBlocks:
+        - BasicBlock:
+            ID: 94548170639568
+            OpCodes:
+              - 2: 1
+              - 31: 3
+              - 33: 3
+        - BasicBlock:
+            ID: 94548170645440
+            OpCodes:
+              - 2: 1
+              - 13: 1
+              - 32: 3
+              - 34: 1
+              - 40: 2
+              - 56: 1
+        - BasicBlock:
+            ID: 94548170645632
+            OpCodes:
+              - 2: 1
+              - 32: 2
+              - 53: 1
+        - BasicBlock:
+            ID: 94548170646048
+            OpCodes:
+              - 1: 1
+              - 56: 1
+        - BasicBlock:
+            ID: 94548170647632
+            OpCodes:
+              - 2: 1
+              - 13: 1
+              - 32: 1
+              - 33: 1
+  - Function:
+      Name: in_prefix
+      BasicBlocks:
+        - BasicBlock:
+            ID: 94548170652128
+            OpCodes:
+              - 2: 1
+              - 31: 6
+              - 33: 5
+        - BasicBlock:
+            ID: 94548170652320
+            OpCodes:
+              - 2: 1
+              - 32: 2
+              - 53: 1
+        - BasicBlock:
+            ID: 94548170654304
+            OpCodes:
+              - 2: 1
+              - 32: 4
+              - 34: 1
+              - 40: 2
+              - 53: 1
+        - BasicBlock:
+            ID: 94548170654384
+            OpCodes:
+              - 2: 1
+              - 33: 1
+        - BasicBlock:
+            ID: 94548170655536
+            OpCodes:
+              - 2: 1
+              - 33: 1
+        - BasicBlock:
+            ID: 94548170655616
+            OpCodes:
+              - 2: 1
+        - BasicBlock:
+            ID: 94548170656080
+            OpCodes:
+              - 1: 1
+              - 32: 1
+        - BasicBlock:
+            ID: 94548170656272
+            OpCodes:
+              - 2: 1
+              - 13: 1
+              - 32: 1
+              - 33: 1
+  - Function:
+      Name: atoi_
+      BasicBlocks:
+        - BasicBlock:
+            ID: 94548170658000
+            OpCodes:
+              - 2: 1
+              - 31: 4
+              - 32: 1
+              - 33: 2
+              - 53: 1
+        - BasicBlock:
+            ID: 94548170658352
+            OpCodes:
+              - 2: 1
+              - 32: 1
+              - 33: 1
+        - BasicBlock:
+            ID: 94548170660384
+            OpCodes:
+              - 2: 1
+              - 33: 1
+              - 56: 1
+        - BasicBlock:
+            ID: 94548170660896
+            OpCodes:
+              - 2: 1
+              - 32: 2
+              - 53: 1
+        - BasicBlock:
+            ID: 94548170661456
+            OpCodes:
+              - 2: 1
+              - 13: 1
+              - 15: 1
+              - 17: 1
+              - 32: 5
+              - 33: 1
+              - 40: 1
+        - BasicBlock:
+            ID: 94548170661536
+            OpCodes:
+              - 2: 1
+              - 33: 1
+        - BasicBlock:
+            ID: 94548170663008
+            OpCodes:
+              - 2: 1
+              - 32: 1
+              - 33: 1
+              - 34: 1
+        - BasicBlock:
+            ID: 94548170664128
+            OpCodes:
+              - 1: 1
+              - 32: 1
+  - Function:
+      Name: permute_next_pos
+      BasicBlocks:
+        - BasicBlock:
+            ID: 94548170666176
+            OpCodes:
+              - 2: 1
+              - 31: 4
+              - 33: 4
+        - BasicBlock:
+            ID: 94548170666368
+            OpCodes:
+              - 2: 1
+              - 32: 3
+              - 53: 1
+              - 56: 1
+        - BasicBlock:
+            ID: 94548170667360
+            OpCodes:
+              - 2: 1
+              - 32: 2
+              - 53: 1
+        - BasicBlock:
+            ID: 94548170668064
+            OpCodes:
+              - 1: 1
+        - BasicBlock:
+            ID: 94548170668736
+            OpCodes:
+              - 2: 1
+        - BasicBlock:
+            ID: 94548170668816
+            OpCodes:
+              - 2: 1
+              - 13: 1
+              - 32: 6
+              - 33: 1
+              - 34: 1
+              - 38: 1
+              - 40: 1
+              - 56: 1
+        - BasicBlock:
+            ID: 94548170670896
+            OpCodes:
+              - 2: 1
+              - 13: 1
+              - 32: 1
+              - 33: 1
+  - Function:
+      Name: permute
+      BasicBlocks:
+        - BasicBlock:
+            ID: 94548170672288
+            OpCodes:
+              - 2: 1
+              - 31: 3
+              - 32: 2
+              - 33: 3
+              - 53: 1
+        - BasicBlock:
+            ID: 94548170672480
+            OpCodes:
+              - 2: 1
+              - 32: 2
+              - 56: 1
+        - BasicBlock:
+            ID: 94548170673728
+            OpCodes:
+              - 2: 1
+              - 32: 3
+              - 56: 1
+        - BasicBlock:
+            ID: 94548170674544
+            OpCodes:
+              - 1: 1
+  - Function:
+      Name: main
+      BasicBlocks:
+        - BasicBlock:
+            ID: 94548170675536
+            OpCodes:
+              - 1: 1
+              - 31: 4
+              - 32: 5
+              - 33: 3
+              - 34: 1
+              - 40: 1
+              - 56: 3
