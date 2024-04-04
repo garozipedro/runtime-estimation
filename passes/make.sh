@@ -2,12 +2,14 @@
 
 LLVM_DIR=/usr/lib/llvm-15
 PATH_TO_BUILD=$1
+NDEBUG=$2
 
 export CC="$LLVM_DIR/bin/clang -O3"
 export CXX="$LLVM_DIR/bin/clang++ -O3"
 
 function build_pass {
     local path=$1
+    local extra=$2
     cd $path
     if [[ $? -ne 0 ]]; then
         echo "Couldn't access ${path}!"
@@ -20,7 +22,7 @@ function build_pass {
         fi
         mkdir build
         cd build
-        cmake -GNinja -DLT_LLVM_INSTALL_DIR=$LLVM_DIR ..
+        cmake -GNinja -DLT_LLVM_INSTALL_DIR=$LLVM_DIR -DEXTRA_OPTIONS=$extra ..
         ninja
     else # Try to build subdirs.
         for pass in $(ls -d `pwd`/*/); do
@@ -29,4 +31,10 @@ function build_pass {
     fi
 }
 
-build_pass ${PATH_TO_BUILD}
+if [[ $NDEBUG ]]; then
+    EXTRA_STR="-DNDEBUG -O3"
+fi
+
+echo "EXTRA_STR = ${EXTRA_STR}"
+
+build_pass ${PATH_TO_BUILD} ${EXTRA_STR}

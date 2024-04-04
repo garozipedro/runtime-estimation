@@ -11,7 +11,7 @@ LLVMContext context;
 Type *string_ty{ PointerType::getUnqual(Type::getInt8Ty(context)) };
 Type *void_ty{ Type::getVoidTy(context) };
 Type *int_ty{ Type::getInt64Ty(context) };
-Value *zero{ ConstantInt::get(context, APInt(64, 0, true)) };
+//Value *zero{ ConstantInt::get(context, APInt(64, 0, true)) };
 
 // Opt arguments.
 //----------------------------------------------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ private:
   bool is_instrumentation_function(Function *call);
   bool can_instrument_function(Function &fun);
   Value *get_str_value(const char *str, IRBuilder<> &builder);
-  void add_pause_or_resume(BasicBlock &bb, vector<Value *> &start_args, bool pause = true, bool resume = true);
+  void add_pause_and_resume(BasicBlock &bb, vector<Value *> &start_args);
 
   Module *module_;
   GlobalVariable *info_array_;
@@ -190,12 +190,16 @@ void InstrumentationPass::instrument()
       BasicBlock &first{ fun.front() }, &last{ fun.back() };
       IRBuilder<> builder{ &*first.getFirstInsertionPt() };
       Value *function_name{ get_str_value(fun.getName().data(), builder) };
-      vector<Value *> start_args{ function_name, zero };
+      vector<Value *> start_args{ function_name, builder.getInt64(reinterpret_cast<uint64_t>(&fun.front())) };
 
+      // Add pause before each function call, and resume after a series of calls.
+      for (BasicBlock &bb : fun) add_pause_and_resume(bb, start_args);
+
+      // Instrument function's start and end.
+      builder.SetInsertPoint(first.getFirstNonPHI());
       builder.CreateCall(start_fun_, start_args, "instrumentation_start");
       builder.SetInsertPoint(last.getTerminator());
       builder.CreateCall(stop_fun_, None, "instrumentation_stop");
-      for (BasicBlock &bb : fun) add_pause_or_resume(bb, start_args);
     }
   } else if (params.granularity == Granularity::BasicBlock) {
     for (Function &fun : *module_)
@@ -204,11 +208,14 @@ void InstrumentationPass::instrument()
         Value *function_name{ get_str_value(fun.getName().data(), builder) };
         vector<Value *> start_args{ function_name, builder.getInt64(reinterpret_cast<uint64_t>(&bb)) };
 
+        // Add pause before each function call, and resume after a series of calls.
+        add_pause_and_resume(bb, start_args);
+
         // Instrument BB's entry and exit.
+        builder.SetInsertPoint(bb.getFirstNonPHI());
         builder.CreateCall(start_fun_, start_args, "instrumentation_start");
         builder.SetInsertPoint(bb.getTerminator());
         builder.CreateCall(stop_fun_, None, "instrumentation_stop");
-        add_pause_or_resume(bb, start_args);
       }
   }
   if (Function *entry_fun{ module_->getFunction("main") }) {// Insert init/finalize at end of the main function.
@@ -246,7 +253,7 @@ Value *InstrumentationPass::get_str_value(const char *str, IRBuilder<> &builder)
   return res;
 }
 
-void InstrumentationPass::add_pause_or_resume(BasicBlock &bb, vector<Value *> &start_args, bool pause, bool resume)
+void InstrumentationPass::add_pause_and_resume(BasicBlock &bb, vector<Value *> &start_args)
 {
   IRBuilder<> builder{&bb};
   auto it{ bb.begin() };
@@ -254,12 +261,11 @@ void InstrumentationPass::add_pause_or_resume(BasicBlock &bb, vector<Value *> &s
     auto call{ dyn_cast<CallInst>(&*it) };
     if (call && !is_instrumentation_function(call->getCalledFunction())) {
       builder.SetInsertPoint(call);
-      if (pause) builder.CreateCall(pause_fun_, None, "before_call");
-      ++it;
+      builder.CreateCall(pause_fun_, None, "before_call");
+      while (dyn_cast<CallInst>(&*it)) ++it;
       builder.SetInsertPoint(&*it);
-      if (resume) builder.CreateCall(resume_fun_, start_args, "after_call");
-    }
-    ++it;
+      builder.CreateCall(resume_fun_, start_args, "after_call");
+    } else ++it;
   }
 }
 // Register pass plugin.

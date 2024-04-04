@@ -36,10 +36,10 @@ cl::opt<bool> use_points2(
   cl::value_desc("true or false")
 );
 
-#ifdef NDEBUG
-raw_ostream &debs = nulls();
-#else
+#ifndef NDEBUG
 raw_ostream &debs = outs();
+#else
+raw_ostream &debs = nulls();
 #endif
 
 #include "points2_analysis.cc"
@@ -70,8 +70,9 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
   FunctionAnalysisManager &fam = mam.getResult<FunctionAnalysisManagerModuleProxy>(module).getManager();
   Function *entry_func = module.getFunction("main");
   Points2_analysis p2 (*this);
+  int p2_count{ 0 };
 
-  debs << module;
+//  debs << module;
 //  for (Function &foo : module)
 //    foo.viewCFG();
 
@@ -89,14 +90,12 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
       for (BasicBlock &bb : func) {
         for (Instruction &instr : bb) {
           if (auto *call = dyn_cast<CallInst>(&instr)) {// Find call instructions.
-            // Can't directly determine the called function.
+            // Can't directly determine the called function, use points-to analysis.
             if (!call->getCalledFunction() && use_points2) {
               auto traced_functions{ p2.run(call) };
+              outs() << "Traced " << ++p2_count << " functions\n";
               for (auto &traced : traced_functions) {
-                debs << "Traced call to function: " << print(traced.first) << " = "
-                       << traced.second << "\n";
                 Edge edge = make_pair(&func, traced.first);
-                // TODO: sum all traced freqs and add them proportionally to call's BB bfreq.
                 lfreqs_[edge] = lfreqs_[edge] + // Add block's frequency to edge.
                   traced.second;
                 reachable_nodes.insert(traced.first);
@@ -142,10 +141,6 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
       };
       dfs(dfs_functions.front());
     }
-
-    // for (auto &edge : back_edges_) {// Print back edges found.
-    //     errs() << "Back edge [" << edge.first->getName() << " -> " << edge.second->getName() << "]\n";
-    // }
 
     // Foreach function f in reverse depth-first order do.
     for (auto f = dfs_functions.rbegin(); f != dfs_functions.rend(); ++f) {

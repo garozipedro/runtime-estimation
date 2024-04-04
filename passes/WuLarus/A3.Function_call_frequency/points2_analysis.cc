@@ -376,6 +376,7 @@ void Points2_analysis::trace(Trace_data &data, GetElementPtrInst *gep, Instructi
       debs << "Got Array GEP\n";
     } else if (auto *ty{ dyn_cast<PointerType>(gep_type) }) {// TODO: ptr.
       debs << "Got Pointer GEP\n";
+      
     } else {
       errs() << "Couldn't handle gep's source element type: " << *gep_type << '\n';
       abort();
