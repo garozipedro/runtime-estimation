@@ -28,7 +28,7 @@ def init_argparse() -> argparse.ArgumentParser:
         "%(prog)s [--iterations VAL] [--benchmarks VAL] [--flags-file PATH_TO_FILE]"
         "[--result-dir PATH_TO_DIR] [--spec17-dir PATH_TO_SPEC_CPU] [--llvm-dir PATH_TO_LLVM]"
         "[--experiments {time,gprof,wl,uica,mca} default=all] [--test] [--fake] [--O-flags]",
-        description="Generate random sequences of optimizations."
+        description="Run specified experiments."
     )
     parser.add_argument('--iterations', dest='iterations', default=3)
     parser.add_argument('--benchmarks', dest='benchmarks', default="602.gcc_s")
