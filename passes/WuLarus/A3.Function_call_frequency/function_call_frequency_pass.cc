@@ -100,11 +100,12 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
                   traced.second;
                 reachable_nodes.insert(traced.first);
               }
+            } else {
+              Edge edge = make_pair(&func, call->getCalledFunction());
+              lfreqs_[edge] = lfreqs_[edge] + // Add block's frequency to edge.
+                getBlockEdgeFrequency(&func)->getBlockFrequency(&bb);
+              reachable_nodes.insert(call->getCalledFunction());
             }
-            Edge edge = make_pair(&func, call->getCalledFunction());
-            lfreqs_[edge] = lfreqs_[edge] + // Add block's frequency to edge.
-              getBlockEdgeFrequency(&func)->getBlockFrequency(&bb);
-            reachable_nodes.insert(call->getCalledFunction());
           }
         }
       }
@@ -161,7 +162,8 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
   {// Step.3.
     auto &reachable = reachable_functions_[entry_func];
     for (auto jt = visited_functions_.begin(); jt != visited_functions_.end(); ++jt) {
-      jt->second = !(reachable.find(jt->first) != reachable.end());
+//      jt->second = !(reachable.find(jt->first) != reachable.end());
+      jt->second = false;
     }
     visited_functions_[entry_func] = false;
   }
@@ -170,17 +172,17 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
     // TODO: update gfreq.
   }
   // Sum incoming cfreqs for functions not propagated to.
-  for (Function &func : module) {
-    if (cfreqs_.find(&func) == cfreqs_.end()) {
-      for (auto reachables : reachable_functions_) {
-        if (&func != reachables.first && (reachables.second.find(&func) != reachables.second.end())) {
-          // reachables.first is a precedessor of func.
-          Edge edge = make_pair(reachables.first, &func);
-          cfreqs_[&func] += gfreqs_[edge];
-        }
-      }
-    }
-  }
+  // for (Function &func : module) {
+  //   if (cfreqs_.find(&func) == cfreqs_.end()) {
+  //     for (auto reachables : reachable_functions_) {
+  //       if (&func != reachables.first && (reachables.second.find(&func) != reachables.second.end())) {
+  //         // reachables.first is a precedessor of func.
+  //         Edge edge = make_pair(reachables.first, &func);
+  //         cfreqs_[&func] += gfreqs_[edge];
+  //       }
+  //     }
+  //   }
+  // }
   return *this;
 }
 
@@ -204,8 +206,9 @@ void FunctionCallFrequencyPass::propagate_call_freq(Function *f, Function *head,
       Edge fp_f = make_pair(fp, f);
       if (is_final && (back_edges_.find(fp_f) != back_edges_.end()))
         cyclic_probability += back_edge_prob_[fp_f];
-      else if (back_edges_.find(fp_f) == back_edges_.end())
+      else if (back_edges_.find(fp_f) == back_edges_.end()) {
         cfreqs_[f] += gfreqs_[fp_f];
+      }
     }
     if (cyclic_probability > 1 - epsilon) cyclic_probability = 1 - epsilon;
     cfreqs_[f] = cfreqs_[f] / (1.0 - cyclic_probability);

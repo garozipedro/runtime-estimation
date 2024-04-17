@@ -111,7 +111,7 @@ void InstrumentationPass::gen_info()
     for (BasicBlock &bb : func)
       for (Instruction &instr : bb)
         if (params.granularity == Granularity::Function)
-          data[&func][nullptr][instr.getOpcode()] += 1;
+          data[&func][reinterpret_cast<uint64_t>(&func.front())][instr.getOpcode()] += 1;
         else
           data[&func][&bb][instr.getOpcode()] += 1;
 
@@ -187,7 +187,7 @@ void InstrumentationPass::instrument()
   if (params.granularity == Granularity::Function) {
     for (Function &fun : *module_) {
       if (!can_instrument_function(fun)) continue;
-      BasicBlock &first{ fun.front() }, &last{ fun.back() };
+      BasicBlock &first{ fun.front() };
       IRBuilder<> builder{ &*first.getFirstInsertionPt() };
       Value *function_name{ get_str_value(fun.getName().data(), builder) };
       vector<Value *> start_args{ function_name, builder.getInt64(reinterpret_cast<uint64_t>(&fun.front())) };
@@ -198,8 +198,12 @@ void InstrumentationPass::instrument()
       // Instrument function's start and end.
       builder.SetInsertPoint(first.getFirstNonPHI());
       builder.CreateCall(start_fun_, start_args, "instrumentation_start");
-      builder.SetInsertPoint(last.getTerminator());
-      builder.CreateCall(stop_fun_, None, "instrumentation_stop");
+      for (BasicBlock &bb : fun) {
+        if (auto bb_return{ dyn_cast<ReturnInst>(bb.getTerminator()) }) {
+          builder.SetInsertPoint(bb_return);
+          builder.CreateCall(stop_fun_, None, "instrumentation_stop");
+        }
+      }
     }
   } else if (params.granularity == Granularity::BasicBlock) {
     for (Function &fun : *module_)
