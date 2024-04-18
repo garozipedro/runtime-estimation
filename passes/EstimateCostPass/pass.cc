@@ -99,6 +99,7 @@ private:
   void compute_cost(Module &);
   void compute_cost(Function &);
   void compute_cost(BasicBlock &, TargetTransformInfo *);
+  void generate_yaml();
 
   map<Cost_option, map<Function *, double>> costs_{};
   bool llvm_cost_selected_{ false };
@@ -108,7 +109,7 @@ private:
 };
 
 llvm::PreservedAnalyses EstimateCostPass::run(llvm::Module &module, llvm::ModuleAnalysisManager &mam) {
-  outs() << "Estimate Cost Pass for module: [" << module.getName() << "]\n";;
+//-  outs() << "Estimate Cost Pass for module: [" << module.getName() << "]\n";;
   fam_ = &mam.getResult<FunctionAnalysisManagerModuleProxy>(module).getManager();
 
 //  outs() << "\n\n********************[ Running Wu & Larus ]********************\n";
@@ -117,15 +118,7 @@ llvm::PreservedAnalyses EstimateCostPass::run(llvm::Module &module, llvm::Module
   // Multiply frequencies by instruction costs.
   select_costs();
   compute_cost(module);
-  for (auto &[cost_option, function_cost] : costs_) {
-    double program_cost = 0;
-    outs() << "Cost option = " << cost_name(cost_option) << '\n';
-    for (auto &[function, cost] : function_cost) {
-      program_cost += cost;
-      outs() << "\tFuncion[" << function->getName() << "] = " << cost << '\n';
-    }
-    outs() << "\tTotal cost = " << program_cost << '\n';
-  }
+  generate_yaml();
   return llvm::PreservedAnalyses::all();
 }
 
@@ -135,7 +128,6 @@ void EstimateCostPass::select_costs()
   string cost{};
   costs_.clear();
   while (getline(ss, cost, ',')) {
-    errs() << "Selected cost [" << cost << "]\n";
     if (cost == "latency") { costs_[Cost_option::latency] = {}; llvm_cost_selected_ = true; }
     else if (cost == "recipthroughput") { costs_[Cost_option::recipthroughput] = {}; llvm_cost_selected_ = true; }
     else if (cost == "codesize") { costs_[Cost_option::codesize] = {}; llvm_cost_selected_ = true; }
@@ -196,6 +188,24 @@ void EstimateCostPass::print_freqs(Module &module)
         outs() << "] = " << wu_larus_->get_local_edge_frequency(&bb, succ) << "\n";
       }
     }
+  }
+}
+
+void EstimateCostPass::generate_yaml()
+{
+  outs() << "Cost_options:\n";
+  for (auto &[cost_option, function_cost] : costs_) {
+    double program_cost = 0;
+    outs() << "- Option:\n";
+    outs() << "    Name: " << cost_name(cost_option) << '\n';
+    outs() << "    Functions:\n";
+    for (auto &[function, cost] : function_cost) {
+      outs() << "    - Function:\n"
+             << "        Name: " << function->getName() << '\n'
+             << "        Cost: " << cost << '\n';
+      program_cost += cost;
+    }
+    outs() << "    Total cost: " << program_cost << '\n';
   }
 }
 

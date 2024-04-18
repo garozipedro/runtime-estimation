@@ -69,7 +69,7 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
   //cg.print(errs());
   FunctionAnalysisManager &fam = mam.getResult<FunctionAnalysisManagerModuleProxy>(module).getManager();
   Function *entry_func = module.getFunction("main");
-  Points2_analysis p2 (*this);
+  Points2_analysis *p2{ nullptr };
   int p2_count{ 0 };
 
 //  debs << module;
@@ -92,7 +92,8 @@ FunctionCallFrequencyPass::Result &FunctionCallFrequencyPass::run(Module &module
           if (auto *call = dyn_cast<CallInst>(&instr)) {// Find call instructions.
             // Can't directly determine the called function, use points-to analysis.
             if (!call->getCalledFunction() && use_points2) {
-              auto traced_functions{ p2.run(call) };
+              if (!p2) p2 = new Points2_analysis{ *this };
+              auto traced_functions{ p2->run(call) };
               outs() << "Traced " << ++p2_count << " functions\n";
               for (auto &traced : traced_functions) {
                 Edge edge = make_pair(&func, traced.first);
