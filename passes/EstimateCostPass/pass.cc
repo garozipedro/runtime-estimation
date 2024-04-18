@@ -100,7 +100,7 @@ private:
   void compute_cost(Function &);
   void compute_cost(BasicBlock &, TargetTransformInfo *);
 
-  map<Cost_option, double> costs_{};
+  map<Cost_option, map<Function *, double>> costs_{};
   bool llvm_cost_selected_{ false };
 
   FunctionCallFrequencyPass *wu_larus_ = nullptr;
@@ -117,8 +117,14 @@ llvm::PreservedAnalyses EstimateCostPass::run(llvm::Module &module, llvm::Module
   // Multiply frequencies by instruction costs.
   select_costs();
   compute_cost(module);
-  for (auto &[cost_option, cost] : costs_) {
-    outs() << "Total cost [" << cost_name(cost_option) << "] = " << cost << '\n';
+  for (auto &[cost_option, function_cost] : costs_) {
+    double program_cost = 0;
+    outs() << "Cost option = " << cost_name(cost_option) << '\n';
+    for (auto &[function, cost] : function_cost) {
+      program_cost += cost;
+      outs() << "\tFuncion[" << function->getName() << "] = " << cost << '\n';
+    }
+    outs() << "\tTotal cost = " << program_cost << '\n';
   }
   return llvm::PreservedAnalyses::all();
 }
@@ -130,12 +136,12 @@ void EstimateCostPass::select_costs()
   costs_.clear();
   while (getline(ss, cost, ',')) {
     errs() << "Selected cost [" << cost << "]\n";
-    if (cost == "latency") { costs_[Cost_option::latency] = 0; llvm_cost_selected_ = true; }
-    else if (cost == "recipthroughput") { costs_[Cost_option::recipthroughput] = 0; llvm_cost_selected_ = true; }
-    else if (cost == "codesize") { costs_[Cost_option::codesize] = 0; llvm_cost_selected_ = true; }
-    else if (cost == "sizeandlatency") { costs_[Cost_option::sizeandlatency] = 0; llvm_cost_selected_ = true; }
-    else if (cost == "one") costs_[Cost_option::one] = 0;
-    else if (cost == "dynamic") costs_[Cost_option::dynamic] = 0;
+    if (cost == "latency") { costs_[Cost_option::latency] = {}; llvm_cost_selected_ = true; }
+    else if (cost == "recipthroughput") { costs_[Cost_option::recipthroughput] = {}; llvm_cost_selected_ = true; }
+    else if (cost == "codesize") { costs_[Cost_option::codesize] = {}; llvm_cost_selected_ = true; }
+    else if (cost == "sizeandlatency") { costs_[Cost_option::sizeandlatency] = {}; llvm_cost_selected_ = true; }
+    else if (cost == "one") costs_[Cost_option::one] = {};
+    else if (cost == "dynamic") costs_[Cost_option::dynamic] = {};
     else errs() << "Unrecognized cost kind [" << cost << "]\n";
   }
 }
@@ -155,19 +161,20 @@ void EstimateCostPass::compute_cost(Function &fun)
 
 void EstimateCostPass::compute_cost(BasicBlock &bb, TargetTransformInfo *tti)
 {
+  Function *fun = bb.getParent();
   double cos{ 0 };
   double freq{ wu_larus_->get_global_block_frequency(&bb) };
   for (auto &[cost_opt, _] : costs_) {
     // Default LLVM costs from TargetIRAnalysis.
     if (cost_opt == Cost_option::one) {
-      costs_[cost_opt] += bb.size() * freq;
+      costs_[cost_opt][fun] += bb.size() * freq;
     } else if (cost_opt == Cost_option::dynamic) {
       // TODO.
     } else if (is_llvm_cost(cost_opt)) {
       for (Instruction &instr : bb) {
         auto tti_cost{ tti->getInstructionCost(&instr, cost_opt_to_tti_cost(cost_opt)).getValue() };
         double icost{ tti_cost.hasValue() ? static_cast<double>(tti_cost.getValue()) : 0 };
-        costs_[cost_opt] += icost * freq;
+        costs_[cost_opt][fun] += icost * freq;
       }
     }
   }
