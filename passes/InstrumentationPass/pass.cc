@@ -111,7 +111,7 @@ void InstrumentationPass::gen_info()
     for (BasicBlock &bb : func)
       for (Instruction &instr : bb)
         if (params.granularity == Granularity::Function)
-          data[&func][reinterpret_cast<uint64_t>(&func.front())][instr.getOpcode()] += 1;
+          data[&func][&func.front()][instr.getOpcode()] += 1;
         else
           data[&func][&bb][instr.getOpcode()] += 1;
 
@@ -151,7 +151,7 @@ void InstrumentationPass::gen_yaml()
     for (BasicBlock &bb : func)
       for (Instruction &instr : bb)
         if (params.granularity == Granularity::Function)
-          data[&func][nullptr][instr.getOpcode()] += 1;
+          data[&func][&func.front()][instr.getOpcode()] += 1;
         else
           data[&func][&bb][instr.getOpcode()] += 1;
 
