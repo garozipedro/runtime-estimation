@@ -228,8 +228,8 @@ void InstrumentationPass::instrument()
     vector<Value *> init_args{ get_str_value(params.output_file, builder) };
 
     builder.CreateCall(init_fun_, init_args);
-    builder.SetInsertPoint(last.getTerminator());
-    builder.CreateCall(finalize_fun_, None);
+//    builder.SetInsertPoint(last.getTerminator());
+//    builder.CreateCall(finalize_fun_, None);
   }
 }
 
