@@ -1,6 +1,7 @@
 #include <papi.h>
 
 #include <cassert>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -24,60 +25,13 @@ namespace Papi_instrumentation {
   // fun-id -> bb-id -> Count_state.
   unordered_map<const char *, unordered_map<uint64_t, Count_state>> counts{};
 
-  uint64_t initialize(const char *ofname)
-  {
-    int retval{};
-    cout << "Initializing papi...\n";
-    if ((retval = PAPI_library_init(PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-      cerr <<  "Error initializing PAPI! " << PAPI_strerror(retval) << endl;
-      return 1;
-    }
-    if ((retval = PAPI_create_eventset(&event_set)) != PAPI_OK) {
-      cerr <<  "Error creating eventset! " << PAPI_strerror(retval) << endl;
-      return 1;
-    }
-    if ((retval = PAPI_add_event(event_set, PAPI_TOT_CYC)) != PAPI_OK) {
-      cerr << "Error adding PAPI_TOT_CYC: " << PAPI_strerror(retval) << endl;
-      return 1;
-    }
-    output_file = ofname;
-    cout << "Done!\n";
-    return 0;
-  }
-
-  void finalize()
-  {
-    cout << "Finalizing...";
-    ofstream output{ output_file };
-    output << "Runtime_data:\n"
-           << "  Instrumentation: PAPI_TOT_CYC\n"
-           << "  Functions:\n";
-    for (auto &[fun_name, bb_count] : counts) {
-      output << "    - Function:\n"
-             << "        Name: " << fun_name << '\n'
-             << "        BasicBlocks:\n";
-      for (auto &[bb, count] : bb_count) {
-        output << "          - BasicBlock:\n"
-               << "              ID: " << bb << '\n'
-               << "              Runs: " << count.executions << '\n'
-               << "              Pauses: " << count.pauses << '\n'
-               << "              Cycles: " << count.cycles << '\n'
-               << "              Average: " << (static_cast<double>(count.cycles) / count.executions) << '\n';
-      }
-    }
-    output.close();
-    PAPI_cleanup_eventset(event_set);
-    PAPI_destroy_eventset(&event_set);
-    cout << "Done!";
-  }
-
   uint64_t resume(const char *fun_name, uint64_t bb_id)
   {
     if (counting) {
       cerr << "Trying to resume count without stoping previous!\n";
       abort();
     }
-    cout << "Counting cycles from function: " << fun_name << '\n';
+//    cout << "Counting cycles from function: " << fun_name << '\n';
     int retval{};
     current_function = fun_name;
     current_bb = bb_id;
@@ -105,7 +59,7 @@ namespace Papi_instrumentation {
       cerr << "Trying to stop count without starting first!\n";
       abort();
     }
-    cout << "Counted cycles from function: " << current_function << '\n';
+//    cout << "Counted cycles from function: " << current_function << '\n';
     long long count{};
     int retval{};
     if ((retval = PAPI_stop(event_set, &count)) != PAPI_OK) {
@@ -114,7 +68,7 @@ namespace Papi_instrumentation {
     }
     counts[current_function][current_bb].cycles += count;
     counts[current_function][current_bb].pauses += 1;
-    cout << "Count = " << count << '\n';
+//    cout << "Count = " << count << '\n';
 
     counting = false;
     return 0;
@@ -124,6 +78,58 @@ namespace Papi_instrumentation {
   {
     return pause();
   }
+
+  void finalize()
+  {
+    if (counting) stop();
+
+//    cout << "Finalizing...";
+    ofstream output{ output_file };
+    output << "Runtime_data:\n"
+           << "  Instrumentation: PAPI_TOT_CYC\n"
+           << "  Functions:\n";
+    for (auto &[fun_name, bb_count] : counts) {
+      output << "    - Function:\n"
+             << "        Name: " << fun_name << '\n'
+             << "        BasicBlocks:\n";
+      for (auto &[bb, count] : bb_count) {
+        output << "          - BasicBlock:\n"
+               << "              ID: " << bb << '\n'
+               << "              Runs: " << count.executions << '\n'
+               << "              Pauses: " << count.pauses << '\n'
+               << "              Cycles: " << count.cycles << '\n'
+               << "              Average: " << (static_cast<double>(count.cycles) / count.executions) << '\n';
+      }
+    }
+    output.close();
+    PAPI_cleanup_eventset(event_set);
+    PAPI_destroy_eventset(&event_set);
+//    cout << "Done!";
+  }
+
+  uint64_t initialize(const char *ofname)
+  {
+    int retval{};
+
+    atexit(finalize);
+//    cout << "Initializing papi...\n";
+    if ((retval = PAPI_library_init(PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
+      cerr <<  "Error initializing PAPI! " << PAPI_strerror(retval) << endl;
+      return 1;
+    }
+    if ((retval = PAPI_create_eventset(&event_set)) != PAPI_OK) {
+      cerr <<  "Error creating eventset! " << PAPI_strerror(retval) << endl;
+      return 1;
+    }
+    if ((retval = PAPI_add_event(event_set, PAPI_TOT_CYC)) != PAPI_OK) {
+      cerr << "Error adding PAPI_TOT_CYC: " << PAPI_strerror(retval) << endl;
+      return 1;
+    }
+    output_file = ofname;
+//    cout << "Done!\n";
+    return 0;
+  }
+
 
 };
 
