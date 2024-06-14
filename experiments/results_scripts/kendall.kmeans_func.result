@@ -1,0 +1,813 @@
+automotive_qsort1
+Kendall coefficient mca_cycles: 0.6870429186215167
+Kendall coefficient mca_uops: 0.7175781594491396
+Kendall coefficient mca_throughput: 0.7175781594491396
+Kendall coefficient uica: 0.7175781594491396
+Kendall coefficient wl_latency: 0.04580286124143445
+Kendall coefficient wl_recipthroughput: 0.13740858372430334
+Kendall coefficient wl_codesize: 0.13740858372430334
+Kendall coefficient wl_sizeandlatency: 0.13740858372430334
+Kendall coefficient wl_kmeans: 0.38169051034528706
+Spearman coefficient mca_cycles: 0.8511396590310907
+Spearman coefficient mca_uops: 0.8651501883978578
+Spearman coefficient mca_throughput: 0.8651501883978578
+Spearman coefficient uica: 0.8651501883978578
+Spearman coefficient wl_latency: 0.04553422044199251
+Spearman coefficient wl_recipthroughput: 0.1225921319592106
+Spearman coefficient wl_codesize: 0.1225921319592106
+Spearman coefficient wl_sizeandlatency: 0.1225921319592106
+Spearman coefficient wl_kmeans: 0.5359027482788349
+Simple coefficient mca_cycles: 84.61538461538461
+Simple coefficient mca_uops: 86.15384615384616
+Simple coefficient mca_throughput: 86.15384615384616
+Simple coefficient uica: 86.15384615384616
+Simple coefficient wl_latency: 52.30769230769231
+Simple coefficient wl_recipthroughput: 56.92307692307692
+Simple coefficient wl_codesize: 56.92307692307692
+Simple coefficient wl_sizeandlatency: 56.92307692307692
+Simple coefficient wl_kmeans: 69.23076923076923
+------------------------------------------
+
+automotive_susan_c
+Kendall coefficient mca_cycles: 0.6666666666666666
+Kendall coefficient mca_uops: 0.6969696969696969
+Kendall coefficient mca_throughput: 0.6969696969696969
+Kendall coefficient uica: 0.6969696969696969
+Kendall coefficient wl_latency: 0.5454545454545454
+Kendall coefficient wl_recipthroughput: 0.5151515151515151
+Kendall coefficient wl_codesize: 0.5151515151515151
+Kendall coefficient wl_sizeandlatency: 0.5151515151515151
+Kendall coefficient wl_kmeans: 0.4242424242424242
+Spearman coefficient mca_cycles: 0.8531468531468532
+Spearman coefficient mca_uops: 0.8671328671328673
+Spearman coefficient mca_throughput: 0.8671328671328673
+Spearman coefficient uica: 0.8671328671328673
+Spearman coefficient wl_latency: 0.7062937062937064
+Spearman coefficient wl_recipthroughput: 0.6993006993006995
+Spearman coefficient wl_codesize: 0.6993006993006995
+Spearman coefficient wl_sizeandlatency: 0.6993006993006995
+Spearman coefficient wl_kmeans: 0.6223776223776225
+Simple coefficient mca_cycles: 83.33333333333333
+Simple coefficient mca_uops: 84.84848484848484
+Simple coefficient mca_throughput: 84.84848484848484
+Simple coefficient uica: 84.84848484848484
+Simple coefficient wl_latency: 77.27272727272727
+Simple coefficient wl_recipthroughput: 75.75757575757575
+Simple coefficient wl_codesize: 75.75757575757575
+Simple coefficient wl_sizeandlatency: 75.75757575757575
+Simple coefficient wl_kmeans: 71.21212121212122
+------------------------------------------
+
+automotive_susan_e
+Kendall coefficient mca_cycles: 0.606060606060606
+Kendall coefficient mca_uops: 0.5757575757575757
+Kendall coefficient mca_throughput: 0.5757575757575757
+Kendall coefficient uica: 0.5757575757575757
+Kendall coefficient wl_latency: 0.4848484848484848
+Kendall coefficient wl_recipthroughput: 0.5151515151515151
+Kendall coefficient wl_codesize: 0.5151515151515151
+Kendall coefficient wl_sizeandlatency: 0.5151515151515151
+Kendall coefficient wl_kmeans: 0.5454545454545454
+Spearman coefficient mca_cycles: 0.7832167832167832
+Spearman coefficient mca_uops: 0.7622377622377624
+Spearman coefficient mca_throughput: 0.7622377622377624
+Spearman coefficient uica: 0.7622377622377624
+Spearman coefficient wl_latency: 0.6223776223776225
+Spearman coefficient wl_recipthroughput: 0.6293706293706295
+Spearman coefficient wl_codesize: 0.6293706293706295
+Spearman coefficient wl_sizeandlatency: 0.6293706293706295
+Spearman coefficient wl_kmeans: 0.6643356643356644
+Simple coefficient mca_cycles: 80.3030303030303
+Simple coefficient mca_uops: 78.78787878787878
+Simple coefficient mca_throughput: 78.78787878787878
+Simple coefficient uica: 78.78787878787878
+Simple coefficient wl_latency: 74.24242424242425
+Simple coefficient wl_recipthroughput: 75.75757575757575
+Simple coefficient wl_codesize: 75.75757575757575
+Simple coefficient wl_sizeandlatency: 75.75757575757575
+Simple coefficient wl_kmeans: 77.27272727272727
+------------------------------------------
+
+automotive_susan_s
+Kendall coefficient mca_cycles: 0.5454545454545454
+Kendall coefficient mca_uops: 0.5757575757575757
+Kendall coefficient mca_throughput: 0.5757575757575757
+Kendall coefficient uica: 0.5757575757575757
+Kendall coefficient wl_latency: 0.4848484848484848
+Kendall coefficient wl_recipthroughput: 0.5151515151515151
+Kendall coefficient wl_codesize: 0.5151515151515151
+Kendall coefficient wl_sizeandlatency: 0.5151515151515151
+Kendall coefficient wl_kmeans: 0.5454545454545454
+Spearman coefficient mca_cycles: 0.7902097902097903
+Spearman coefficient mca_uops: 0.7972027972027973
+Spearman coefficient mca_throughput: 0.7972027972027973
+Spearman coefficient uica: 0.7972027972027973
+Spearman coefficient wl_latency: 0.6783216783216784
+Spearman coefficient wl_recipthroughput: 0.6853146853146854
+Spearman coefficient wl_codesize: 0.6853146853146854
+Spearman coefficient wl_sizeandlatency: 0.6853146853146854
+Spearman coefficient wl_kmeans: 0.7482517482517484
+Simple coefficient mca_cycles: 77.27272727272727
+Simple coefficient mca_uops: 78.78787878787878
+Simple coefficient mca_throughput: 78.78787878787878
+Simple coefficient uica: 78.78787878787878
+Simple coefficient wl_latency: 74.24242424242425
+Simple coefficient wl_recipthroughput: 75.75757575757575
+Simple coefficient wl_codesize: 75.75757575757575
+Simple coefficient wl_sizeandlatency: 75.75757575757575
+Simple coefficient wl_kmeans: 77.27272727272727
+------------------------------------------
+
+bzip2d
+Kendall coefficient mca_cycles: 0.4848484848484848
+Kendall coefficient mca_uops: 0.5151515151515151
+Kendall coefficient mca_throughput: 0.5454545454545454
+Kendall coefficient uica: 0.4848484848484848
+Kendall coefficient wl_latency: 0.19847906537954926
+Kendall coefficient wl_recipthroughput: 0.19847906537954926
+Kendall coefficient wl_codesize: 0.19847906537954926
+Kendall coefficient wl_sizeandlatency: 0.19847906537954926
+Kendall coefficient wl_kmeans: 0.13740858372430334
+Spearman coefficient mca_cycles: 0.6713286713286714
+Spearman coefficient mca_uops: 0.6783216783216784
+Spearman coefficient mca_throughput: 0.7412587412587414
+Spearman coefficient uica: 0.6713286713286714
+Spearman coefficient wl_latency: 0.2767079549936468
+Spearman coefficient wl_recipthroughput: 0.2767079549936468
+Spearman coefficient wl_codesize: 0.2767079549936468
+Spearman coefficient wl_sizeandlatency: 0.2767079549936468
+Spearman coefficient wl_kmeans: 0.17162898474289487
+Simple coefficient mca_cycles: 74.24242424242425
+Simple coefficient mca_uops: 75.75757575757575
+Simple coefficient mca_throughput: 77.27272727272727
+Simple coefficient uica: 74.24242424242425
+Simple coefficient wl_latency: 60.0
+Simple coefficient wl_recipthroughput: 60.0
+Simple coefficient wl_codesize: 60.0
+Simple coefficient wl_sizeandlatency: 60.0
+Simple coefficient wl_kmeans: 56.92307692307692
+------------------------------------------
+
+bzip2e
+Kendall coefficient mca_cycles: 0.7878787878787877
+Kendall coefficient mca_uops: 0.7575757575757575
+Kendall coefficient mca_throughput: 0.7272727272727272
+Kendall coefficient uica: 0.7878787878787877
+Kendall coefficient wl_latency: 0.2595495470347952
+Kendall coefficient wl_recipthroughput: 0.2595495470347952
+Kendall coefficient wl_codesize: 0.2595495470347952
+Kendall coefficient wl_sizeandlatency: 0.2595495470347952
+Kendall coefficient wl_kmeans: 0.19847906537954926
+Spearman coefficient mca_cycles: 0.9090909090909092
+Spearman coefficient mca_uops: 0.8951048951048951
+Spearman coefficient mca_throughput: 0.8811188811188813
+Spearman coefficient uica: 0.9090909090909092
+Spearman coefficient wl_latency: 0.3747816605610153
+Spearman coefficient wl_recipthroughput: 0.3747816605610153
+Spearman coefficient wl_codesize: 0.3747816605610153
+Spearman coefficient wl_sizeandlatency: 0.3747816605610153
+Spearman coefficient wl_kmeans: 0.24168163157672948
+Simple coefficient mca_cycles: 89.39393939393939
+Simple coefficient mca_uops: 87.87878787878788
+Simple coefficient mca_throughput: 86.36363636363636
+Simple coefficient uica: 89.39393939393939
+Simple coefficient wl_latency: 63.07692307692308
+Simple coefficient wl_recipthroughput: 63.07692307692308
+Simple coefficient wl_codesize: 63.07692307692308
+Simple coefficient wl_sizeandlatency: 63.07692307692308
+Simple coefficient wl_kmeans: 60.0
+------------------------------------------
+
+consumer_jpeg_c
+Kendall coefficient mca_cycles: 0.6969696969696969
+Kendall coefficient mca_uops: 0.6969696969696969
+Kendall coefficient mca_throughput: 0.7272727272727272
+Kendall coefficient uica: 0.7272727272727272
+Kendall coefficient wl_latency: 0.3636363636363636
+Kendall coefficient wl_recipthroughput: 0.5151515151515151
+Kendall coefficient wl_codesize: 0.5151515151515151
+Kendall coefficient wl_sizeandlatency: 0.5151515151515151
+Kendall coefficient wl_kmeans: 0.6363636363636362
+Spearman coefficient mca_cycles: 0.8461538461538463
+Spearman coefficient mca_uops: 0.8461538461538463
+Spearman coefficient mca_throughput: 0.8811188811188813
+Spearman coefficient uica: 0.8671328671328673
+Spearman coefficient wl_latency: 0.41958041958041964
+Spearman coefficient wl_recipthroughput: 0.5454545454545455
+Spearman coefficient wl_codesize: 0.5454545454545455
+Spearman coefficient wl_sizeandlatency: 0.5454545454545455
+Spearman coefficient wl_kmeans: 0.7902097902097903
+Simple coefficient mca_cycles: 84.84848484848484
+Simple coefficient mca_uops: 84.84848484848484
+Simple coefficient mca_throughput: 86.36363636363636
+Simple coefficient uica: 86.36363636363636
+Simple coefficient wl_latency: 68.18181818181819
+Simple coefficient wl_recipthroughput: 75.75757575757575
+Simple coefficient wl_codesize: 75.75757575757575
+Simple coefficient wl_sizeandlatency: 75.75757575757575
+Simple coefficient wl_kmeans: 81.81818181818181
+------------------------------------------
+
+consumer_jpeg_d
+Kendall coefficient mca_cycles: 0.6666666666666666
+Kendall coefficient mca_uops: 0.6363636363636362
+Kendall coefficient mca_throughput: 0.6969696969696969
+Kendall coefficient uica: 0.6666666666666666
+Kendall coefficient wl_latency: 0.5757575757575757
+Kendall coefficient wl_recipthroughput: 0.5757575757575757
+Kendall coefficient wl_codesize: 0.5757575757575757
+Kendall coefficient wl_sizeandlatency: 0.5757575757575757
+Kendall coefficient wl_kmeans: 0.606060606060606
+Spearman coefficient mca_cycles: 0.8531468531468532
+Spearman coefficient mca_uops: 0.8461538461538463
+Spearman coefficient mca_throughput: 0.8811188811188813
+Spearman coefficient uica: 0.8531468531468532
+Spearman coefficient wl_latency: 0.7552447552447553
+Spearman coefficient wl_recipthroughput: 0.7552447552447553
+Spearman coefficient wl_codesize: 0.7552447552447553
+Spearman coefficient wl_sizeandlatency: 0.7552447552447553
+Spearman coefficient wl_kmeans: 0.8181818181818183
+Simple coefficient mca_cycles: 83.33333333333333
+Simple coefficient mca_uops: 81.81818181818181
+Simple coefficient mca_throughput: 84.84848484848484
+Simple coefficient uica: 83.33333333333333
+Simple coefficient wl_latency: 78.78787878787878
+Simple coefficient wl_recipthroughput: 78.78787878787878
+Simple coefficient wl_codesize: 78.78787878787878
+Simple coefficient wl_sizeandlatency: 78.78787878787878
+Simple coefficient wl_kmeans: 80.3030303030303
+------------------------------------------
+
+consumer_lame
+Kendall coefficient mca_cycles: 0.606060606060606
+Kendall coefficient mca_uops: 0.606060606060606
+Kendall coefficient mca_throughput: 0.6363636363636362
+Kendall coefficient uica: 0.606060606060606
+Kendall coefficient wl_latency: 0.1212121212121212
+Kendall coefficient wl_recipthroughput: 0.1818181818181818
+Kendall coefficient wl_codesize: 0.1818181818181818
+Kendall coefficient wl_sizeandlatency: 0.1818181818181818
+Kendall coefficient wl_kmeans: 0.3636363636363636
+Spearman coefficient mca_cycles: 0.8391608391608393
+Spearman coefficient mca_uops: 0.8391608391608393
+Spearman coefficient mca_throughput: 0.8461538461538463
+Spearman coefficient uica: 0.8391608391608393
+Spearman coefficient wl_latency: 0.08391608391608392
+Spearman coefficient wl_recipthroughput: 0.2027972027972028
+Spearman coefficient wl_codesize: 0.2027972027972028
+Spearman coefficient wl_sizeandlatency: 0.2027972027972028
+Spearman coefficient wl_kmeans: 0.5734265734265735
+Simple coefficient mca_cycles: 80.3030303030303
+Simple coefficient mca_uops: 80.3030303030303
+Simple coefficient mca_throughput: 81.81818181818181
+Simple coefficient uica: 80.3030303030303
+Simple coefficient wl_latency: 56.06060606060606
+Simple coefficient wl_recipthroughput: 59.09090909090909
+Simple coefficient wl_codesize: 59.09090909090909
+Simple coefficient wl_sizeandlatency: 59.09090909090909
+Simple coefficient wl_kmeans: 68.18181818181819
+------------------------------------------
+
+consumer_tiff2bw
+Kendall coefficient mca_cycles: 0.6363636363636362
+Kendall coefficient mca_uops: 0.6363636363636362
+Kendall coefficient mca_throughput: 0.6363636363636362
+Kendall coefficient uica: 0.6363636363636362
+Kendall coefficient wl_latency: 0.5151515151515151
+Kendall coefficient wl_recipthroughput: 0.4545454545454545
+Kendall coefficient wl_codesize: 0.4545454545454545
+Kendall coefficient wl_sizeandlatency: 0.4545454545454545
+Kendall coefficient wl_kmeans: 0.5454545454545454
+Spearman coefficient mca_cycles: 0.8251748251748254
+Spearman coefficient mca_uops: 0.8041958041958043
+Spearman coefficient mca_throughput: 0.8041958041958043
+Spearman coefficient uica: 0.8041958041958043
+Spearman coefficient wl_latency: 0.5664335664335665
+Spearman coefficient wl_recipthroughput: 0.5384615384615385
+Spearman coefficient wl_codesize: 0.5384615384615385
+Spearman coefficient wl_sizeandlatency: 0.5384615384615385
+Spearman coefficient wl_kmeans: 0.7412587412587414
+Simple coefficient mca_cycles: 81.81818181818181
+Simple coefficient mca_uops: 81.81818181818181
+Simple coefficient mca_throughput: 81.81818181818181
+Simple coefficient uica: 81.81818181818181
+Simple coefficient wl_latency: 75.75757575757575
+Simple coefficient wl_recipthroughput: 72.72727272727273
+Simple coefficient wl_codesize: 72.72727272727273
+Simple coefficient wl_sizeandlatency: 72.72727272727273
+Simple coefficient wl_kmeans: 77.27272727272727
+------------------------------------------
+
+consumer_tiff2rgba
+Kendall coefficient mca_cycles: 0.6666666666666666
+Kendall coefficient mca_uops: 0.6666666666666666
+Kendall coefficient mca_throughput: 0.6666666666666666
+Kendall coefficient uica: 0.6666666666666666
+Kendall coefficient wl_latency: 0.0
+Kendall coefficient wl_recipthroughput: 0.0
+Kendall coefficient wl_codesize: 0.0
+Kendall coefficient wl_sizeandlatency: 0.0
+Kendall coefficient wl_kmeans: 0.3333333333333333
+Spearman coefficient mca_cycles: 0.8391608391608393
+Spearman coefficient mca_uops: 0.8181818181818183
+Spearman coefficient mca_throughput: 0.8181818181818183
+Spearman coefficient uica: 0.8181818181818183
+Spearman coefficient wl_latency: 0.18181818181818185
+Spearman coefficient wl_recipthroughput: 0.18181818181818185
+Spearman coefficient wl_codesize: 0.18181818181818185
+Spearman coefficient wl_sizeandlatency: 0.18181818181818185
+Spearman coefficient wl_kmeans: 0.4825174825174825
+Simple coefficient mca_cycles: 83.33333333333333
+Simple coefficient mca_uops: 83.33333333333333
+Simple coefficient mca_throughput: 83.33333333333333
+Simple coefficient uica: 83.33333333333333
+Simple coefficient wl_latency: 50.0
+Simple coefficient wl_recipthroughput: 50.0
+Simple coefficient wl_codesize: 50.0
+Simple coefficient wl_sizeandlatency: 50.0
+Simple coefficient wl_kmeans: 66.66666666666667
+------------------------------------------
+
+consumer_tiffmedian
+Kendall coefficient mca_cycles: 0.6363636363636362
+Kendall coefficient mca_uops: 0.6666666666666666
+Kendall coefficient mca_throughput: 0.6666666666666666
+Kendall coefficient uica: 0.6666666666666666
+Kendall coefficient wl_latency: 0.5757575757575757
+Kendall coefficient wl_recipthroughput: 0.6363636363636362
+Kendall coefficient wl_codesize: 0.6363636363636362
+Kendall coefficient wl_sizeandlatency: 0.6363636363636362
+Kendall coefficient wl_kmeans: 0.6666666666666666
+Spearman coefficient mca_cycles: 0.8111888111888113
+Spearman coefficient mca_uops: 0.8181818181818183
+Spearman coefficient mca_throughput: 0.8181818181818183
+Spearman coefficient uica: 0.8181818181818183
+Spearman coefficient wl_latency: 0.7692307692307694
+Spearman coefficient wl_recipthroughput: 0.7902097902097903
+Spearman coefficient wl_codesize: 0.7902097902097903
+Spearman coefficient wl_sizeandlatency: 0.7902097902097903
+Spearman coefficient wl_kmeans: 0.8181818181818183
+Simple coefficient mca_cycles: 81.81818181818181
+Simple coefficient mca_uops: 83.33333333333333
+Simple coefficient mca_throughput: 83.33333333333333
+Simple coefficient uica: 83.33333333333333
+Simple coefficient wl_latency: 78.78787878787878
+Simple coefficient wl_recipthroughput: 81.81818181818181
+Simple coefficient wl_codesize: 81.81818181818181
+Simple coefficient wl_sizeandlatency: 81.81818181818181
+Simple coefficient wl_kmeans: 83.33333333333333
+------------------------------------------
+
+network_dijkstra
+Kendall coefficient mca_cycles: 0.8397191227596315
+Kendall coefficient mca_uops: 0.8702543635872545
+Kendall coefficient mca_throughput: 0.8702543635872545
+Kendall coefficient uica: 0.8091838819320086
+Kendall coefficient wl_latency: 0.5649019553110248
+Kendall coefficient wl_recipthroughput: 0.5954371961386479
+Kendall coefficient wl_codesize: 0.5649019553110248
+Kendall coefficient wl_sizeandlatency: 0.5649019553110248
+Kendall coefficient wl_kmeans: 0.6565076777938937
+Spearman coefficient mca_cycles: 0.9422080999150758
+Spearman coefficient mca_uops: 0.9281975705483089
+Spearman coefficient mca_throughput: 0.9281975705483089
+Spearman coefficient uica: 0.9141870411815418
+Spearman coefficient wl_latency: 0.7250448947301885
+Spearman coefficient wl_recipthroughput: 0.7600712181471057
+Spearman coefficient wl_codesize: 0.7250448947301885
+Spearman coefficient wl_sizeandlatency: 0.7250448947301885
+Spearman coefficient wl_kmeans: 0.7880922768806397
+Simple coefficient mca_cycles: 92.3076923076923
+Simple coefficient mca_uops: 93.84615384615384
+Simple coefficient mca_throughput: 93.84615384615384
+Simple coefficient uica: 90.76923076923077
+Simple coefficient wl_latency: 78.46153846153847
+Simple coefficient wl_recipthroughput: 80.0
+Simple coefficient wl_codesize: 78.46153846153847
+Simple coefficient wl_sizeandlatency: 78.46153846153847
+Simple coefficient wl_kmeans: 83.07692307692308
+------------------------------------------
+
+network_patricia
+Kendall coefficient mca_cycles: 0.606060606060606
+Kendall coefficient mca_uops: 0.6363636363636362
+Kendall coefficient mca_throughput: 0.606060606060606
+Kendall coefficient uica: 0.6969696969696969
+Kendall coefficient wl_latency: 0.303030303030303
+Kendall coefficient wl_recipthroughput: 0.2424242424242424
+Kendall coefficient wl_codesize: 0.2424242424242424
+Kendall coefficient wl_sizeandlatency: 0.2424242424242424
+Kendall coefficient wl_kmeans: 0.1212121212121212
+Spearman coefficient mca_cycles: 0.7762237762237763
+Spearman coefficient mca_uops: 0.7902097902097903
+Spearman coefficient mca_throughput: 0.7762237762237763
+Spearman coefficient uica: 0.8321678321678322
+Spearman coefficient wl_latency: 0.5174825174825175
+Spearman coefficient wl_recipthroughput: 0.4895104895104896
+Spearman coefficient wl_codesize: 0.4895104895104896
+Spearman coefficient wl_sizeandlatency: 0.4895104895104896
+Spearman coefficient wl_kmeans: 0.3356643356643357
+Simple coefficient mca_cycles: 80.3030303030303
+Simple coefficient mca_uops: 81.81818181818181
+Simple coefficient mca_throughput: 80.3030303030303
+Simple coefficient uica: 84.84848484848484
+Simple coefficient wl_latency: 65.15151515151516
+Simple coefficient wl_recipthroughput: 62.121212121212125
+Simple coefficient wl_codesize: 62.121212121212125
+Simple coefficient wl_sizeandlatency: 62.121212121212125
+Simple coefficient wl_kmeans: 56.06060606060606
+------------------------------------------
+
+office_ispell
+Kendall coefficient mca_cycles: 0.8181818181818181
+Kendall coefficient mca_uops: 0.7878787878787877
+Kendall coefficient mca_throughput: 0.7575757575757575
+Kendall coefficient uica: 0.8181818181818181
+Kendall coefficient wl_latency: 0.39393939393939387
+Kendall coefficient wl_recipthroughput: 0.39393939393939387
+Kendall coefficient wl_codesize: 0.39393939393939387
+Kendall coefficient wl_sizeandlatency: 0.39393939393939387
+Kendall coefficient wl_kmeans: 0.39393939393939387
+Spearman coefficient mca_cycles: 0.9440559440559443
+Spearman coefficient mca_uops: 0.9370629370629372
+Spearman coefficient mca_throughput: 0.9300699300699302
+Spearman coefficient uica: 0.9440559440559443
+Spearman coefficient wl_latency: 0.4685314685314686
+Spearman coefficient wl_recipthroughput: 0.4685314685314686
+Spearman coefficient wl_codesize: 0.4685314685314686
+Spearman coefficient wl_sizeandlatency: 0.4685314685314686
+Spearman coefficient wl_kmeans: 0.4685314685314686
+Simple coefficient mca_cycles: 90.9090909090909
+Simple coefficient mca_uops: 89.39393939393939
+Simple coefficient mca_throughput: 87.87878787878788
+Simple coefficient uica: 90.9090909090909
+Simple coefficient wl_latency: 69.6969696969697
+Simple coefficient wl_recipthroughput: 69.6969696969697
+Simple coefficient wl_codesize: 69.6969696969697
+Simple coefficient wl_sizeandlatency: 69.6969696969697
+Simple coefficient wl_kmeans: 69.6969696969697
+------------------------------------------
+
+office_rsynth
+Kendall coefficient mca_cycles: 0.39393939393939387
+Kendall coefficient mca_uops: 0.3636363636363636
+Kendall coefficient mca_throughput: 0.4242424242424242
+Kendall coefficient uica: 0.39393939393939387
+Kendall coefficient wl_latency: 0.4848484848484848
+Kendall coefficient wl_recipthroughput: 0.5757575757575757
+Kendall coefficient wl_codesize: 0.5757575757575757
+Kendall coefficient wl_sizeandlatency: 0.5757575757575757
+Kendall coefficient wl_kmeans: 0.5649019553110248
+Spearman coefficient mca_cycles: 0.4545454545454546
+Spearman coefficient mca_uops: 0.43356643356643365
+Spearman coefficient mca_throughput: 0.49650349650349657
+Spearman coefficient uica: 0.5104895104895105
+Spearman coefficient wl_latency: 0.7552447552447553
+Spearman coefficient wl_recipthroughput: 0.8041958041958043
+Spearman coefficient wl_codesize: 0.7832167832167832
+Spearman coefficient wl_sizeandlatency: 0.7832167832167832
+Spearman coefficient wl_kmeans: 0.7740817475138726
+Simple coefficient mca_cycles: 69.6969696969697
+Simple coefficient mca_uops: 68.18181818181819
+Simple coefficient mca_throughput: 71.21212121212122
+Simple coefficient uica: 69.6969696969697
+Simple coefficient wl_latency: 74.24242424242425
+Simple coefficient wl_recipthroughput: 78.78787878787878
+Simple coefficient wl_codesize: 78.78787878787878
+Simple coefficient wl_sizeandlatency: 78.78787878787878
+Simple coefficient wl_kmeans: 78.46153846153847
+------------------------------------------
+
+office_stringsearch1
+Kendall coefficient mca_cycles: 0.4242424242424242
+Kendall coefficient mca_uops: 0.39393939393939387
+Kendall coefficient mca_throughput: 0.4242424242424242
+Kendall coefficient uica: 0.3636363636363636
+Kendall coefficient wl_latency: 0.6666666666666666
+Kendall coefficient wl_recipthroughput: 0.6969696969696969
+Kendall coefficient wl_codesize: 0.7272727272727272
+Kendall coefficient wl_sizeandlatency: 0.7272727272727272
+Kendall coefficient wl_kmeans: 0.6666666666666666
+Spearman coefficient mca_cycles: 0.5874125874125874
+Spearman coefficient mca_uops: 0.5734265734265735
+Spearman coefficient mca_throughput: 0.6083916083916086
+Spearman coefficient uica: 0.5174825174825175
+Spearman coefficient wl_latency: 0.8111888111888113
+Spearman coefficient wl_recipthroughput: 0.8181818181818183
+Spearman coefficient wl_codesize: 0.8251748251748254
+Spearman coefficient wl_sizeandlatency: 0.8251748251748254
+Spearman coefficient wl_kmeans: 0.8461538461538463
+Simple coefficient mca_cycles: 71.21212121212122
+Simple coefficient mca_uops: 69.6969696969697
+Simple coefficient mca_throughput: 71.21212121212122
+Simple coefficient uica: 68.18181818181819
+Simple coefficient wl_latency: 83.33333333333333
+Simple coefficient wl_recipthroughput: 84.84848484848484
+Simple coefficient wl_codesize: 86.36363636363636
+Simple coefficient wl_sizeandlatency: 86.36363636363636
+Simple coefficient wl_kmeans: 83.33333333333333
+------------------------------------------
+
+security_blowfish_d
+Kendall coefficient mca_cycles: 0.7786486411043856
+Kendall coefficient mca_uops: 0.6870429186215167
+Kendall coefficient mca_throughput: 0.6565076777938937
+Kendall coefficient uica: 0.7175781594491396
+Kendall coefficient wl_latency: 0.13740858372430334
+Kendall coefficient wl_recipthroughput: 0.13740858372430334
+Kendall coefficient wl_codesize: 0.13740858372430334
+Kendall coefficient wl_sizeandlatency: 0.13740858372430334
+Kendall coefficient wl_kmeans: 0.38169051034528706
+Spearman coefficient mca_cycles: 0.8931712471313915
+Spearman coefficient mca_uops: 0.8651501883978578
+Spearman coefficient mca_throughput: 0.8581449237144743
+Spearman coefficient uica: 0.8791607177646247
+Spearman coefficient wl_latency: 0.18563951410966176
+Spearman coefficient wl_recipthroughput: 0.18563951410966176
+Spearman coefficient wl_codesize: 0.18563951410966176
+Spearman coefficient wl_sizeandlatency: 0.18563951410966176
+Spearman coefficient wl_kmeans: 0.5989501304292861
+Simple coefficient mca_cycles: 89.23076923076923
+Simple coefficient mca_uops: 84.61538461538461
+Simple coefficient mca_throughput: 83.07692307692308
+Simple coefficient uica: 86.15384615384616
+Simple coefficient wl_latency: 56.92307692307692
+Simple coefficient wl_recipthroughput: 56.92307692307692
+Simple coefficient wl_codesize: 56.92307692307692
+Simple coefficient wl_sizeandlatency: 56.92307692307692
+Simple coefficient wl_kmeans: 69.23076923076923
+------------------------------------------
+
+security_blowfish_e
+Kendall coefficient mca_cycles: 0.7175781594491396
+Kendall coefficient mca_uops: 0.6259724369662708
+Kendall coefficient mca_throughput: 0.6565076777938937
+Kendall coefficient uica: 0.6565076777938937
+Kendall coefficient wl_latency: 0.19847906537954926
+Kendall coefficient wl_recipthroughput: 0.19847906537954926
+Kendall coefficient wl_codesize: 0.19847906537954926
+Kendall coefficient wl_sizeandlatency: 0.19847906537954926
+Kendall coefficient wl_kmeans: 0.442760992000533
+Spearman coefficient mca_cycles: 0.8861659824480081
+Spearman coefficient mca_uops: 0.8581449237144743
+Spearman coefficient mca_throughput: 0.8651501883978578
+Spearman coefficient uica: 0.8651501883978578
+Spearman coefficient wl_latency: 0.2206658375265791
+Spearman coefficient wl_recipthroughput: 0.2206658375265791
+Spearman coefficient wl_codesize: 0.2206658375265791
+Spearman coefficient wl_sizeandlatency: 0.2206658375265791
+Spearman coefficient wl_kmeans: 0.6900185713132712
+Simple coefficient mca_cycles: 86.15384615384616
+Simple coefficient mca_uops: 81.53846153846153
+Simple coefficient mca_throughput: 83.07692307692308
+Simple coefficient uica: 83.07692307692308
+Simple coefficient wl_latency: 60.0
+Simple coefficient wl_recipthroughput: 60.0
+Simple coefficient wl_codesize: 60.0
+Simple coefficient wl_sizeandlatency: 60.0
+Simple coefficient wl_kmeans: 72.3076923076923
+------------------------------------------
+
+security_rijndael_d
+Path not found for: ../cBench/cBench_results/perf.security_rijndael_d.b_11.csv
+Kendall coefficient mca_cycles: 0.2568915451961508
+Kendall coefficient mca_uops: 0.2935903373670295
+Kendall coefficient mca_throughput: 0.2935903373670295
+Kendall coefficient uica: 0.2568915451961508
+Kendall coefficient wl_latency: 0.3302891295379082
+Kendall coefficient wl_recipthroughput: 0.07339758434175737
+Kendall coefficient wl_codesize: 0.3302891295379082
+Kendall coefficient wl_sizeandlatency: 0.3302891295379082
+Kendall coefficient wl_kmeans: 0.11009637651263605
+Spearman coefficient mca_cycles: 0.350798176635218
+Spearman coefficient mca_uops: 0.4054680223446026
+Spearman coefficient mca_throughput: 0.4054680223446026
+Spearman coefficient uica: 0.350798176635218
+Spearman coefficient wl_latency: 0.4692495090055514
+Spearman coefficient wl_recipthroughput: 0.05922566618516668
+Spearman coefficient wl_codesize: 0.43280294519929496
+Spearman coefficient wl_sizeandlatency: 0.43280294519929496
+Spearman coefficient wl_kmeans: 0.15945371665237182
+Simple coefficient mca_cycles: 62.96296296296296
+Simple coefficient mca_uops: 64.81481481481481
+Simple coefficient mca_throughput: 64.81481481481481
+Simple coefficient uica: 62.96296296296296
+Simple coefficient wl_latency: 66.66666666666667
+Simple coefficient wl_recipthroughput: 53.7037037037037
+Simple coefficient wl_codesize: 66.66666666666667
+Simple coefficient wl_sizeandlatency: 66.66666666666667
+Simple coefficient wl_kmeans: 55.55555555555556
+------------------------------------------
+
+security_rijndael_e
+Path not found for: ../cBench/cBench_results/perf.security_rijndael_e.b_11.csv
+Kendall coefficient mca_cycles: 0.36698792170878686
+Kendall coefficient mca_uops: 0.40368671387966554
+Kendall coefficient mca_throughput: 0.40368671387966554
+Kendall coefficient uica: 0.36698792170878686
+Kendall coefficient wl_latency: 0.36698792170878686
+Kendall coefficient wl_recipthroughput: 0.11009637651263605
+Kendall coefficient wl_codesize: 0.36698792170878686
+Kendall coefficient wl_sizeandlatency: 0.36698792170878686
+Kendall coefficient wl_kmeans: 0.14679516868351475
+Spearman coefficient mca_cycles: 0.4692495090055514
+Spearman coefficient mca_uops: 0.5148077137633719
+Spearman coefficient mca_throughput: 0.5148077137633719
+Spearman coefficient uica: 0.4692495090055514
+Spearman coefficient wl_latency: 0.4692495090055514
+Spearman coefficient wl_recipthroughput: 0.10478387094298722
+Spearman coefficient wl_codesize: 0.4510262271024232
+Spearman coefficient wl_sizeandlatency: 0.4510262271024232
+Spearman coefficient wl_kmeans: 0.25968176711957697
+Simple coefficient mca_cycles: 68.51851851851852
+Simple coefficient mca_uops: 70.37037037037037
+Simple coefficient mca_throughput: 70.37037037037037
+Simple coefficient uica: 68.51851851851852
+Simple coefficient wl_latency: 68.51851851851852
+Simple coefficient wl_recipthroughput: 55.55555555555556
+Simple coefficient wl_codesize: 68.51851851851852
+Simple coefficient wl_sizeandlatency: 68.51851851851852
+Simple coefficient wl_kmeans: 57.407407407407405
+------------------------------------------
+
+security_sha
+Kendall coefficient mca_cycles: 0.5757575757575757
+Kendall coefficient mca_uops: 0.6666666666666666
+Kendall coefficient mca_throughput: 0.7272727272727272
+Kendall coefficient uica: 0.7272727272727272
+Kendall coefficient wl_latency: 0.4848484848484848
+Kendall coefficient wl_recipthroughput: 0.4242424242424242
+Kendall coefficient wl_codesize: 0.4242424242424242
+Kendall coefficient wl_sizeandlatency: 0.4242424242424242
+Kendall coefficient wl_kmeans: 0.6363636363636362
+Spearman coefficient mca_cycles: 0.7902097902097903
+Spearman coefficient mca_uops: 0.8391608391608393
+Spearman coefficient mca_throughput: 0.8741258741258742
+Spearman coefficient uica: 0.8811188811188813
+Spearman coefficient wl_latency: 0.7202797202797203
+Spearman coefficient wl_recipthroughput: 0.7062937062937064
+Spearman coefficient wl_codesize: 0.7062937062937064
+Spearman coefficient wl_sizeandlatency: 0.7062937062937064
+Spearman coefficient wl_kmeans: 0.7902097902097903
+Simple coefficient mca_cycles: 78.78787878787878
+Simple coefficient mca_uops: 83.33333333333333
+Simple coefficient mca_throughput: 86.36363636363636
+Simple coefficient uica: 86.36363636363636
+Simple coefficient wl_latency: 74.24242424242425
+Simple coefficient wl_recipthroughput: 71.21212121212122
+Simple coefficient wl_codesize: 71.21212121212122
+Simple coefficient wl_sizeandlatency: 71.21212121212122
+Simple coefficient wl_kmeans: 81.81818181818181
+------------------------------------------
+
+telecom_adpcm_c
+Kendall coefficient mca_cycles: 0.9313248452425005
+Kendall coefficient mca_uops: 0.9618600860701234
+Kendall coefficient mca_throughput: 0.9618600860701234
+Kendall coefficient uica: 0.9618600860701234
+Kendall coefficient wl_latency: 0.38169051034528706
+Kendall coefficient wl_recipthroughput: 0.4732962328281559
+Kendall coefficient wl_codesize: 0.4732962328281559
+Kendall coefficient wl_sizeandlatency: 0.4732962328281559
+Kendall coefficient wl_kmeans: 0.5954371961386479
+Spearman coefficient mca_cycles: 0.9772344233319931
+Spearman coefficient mca_uops: 0.99124495269876
+Spearman coefficient mca_throughput: 0.99124495269876
+Spearman coefficient uica: 0.99124495269876
+Spearman coefficient wl_latency: 0.5078816895453011
+Spearman coefficient wl_recipthroughput: 0.6339764538462033
+Spearman coefficient wl_codesize: 0.6339764538462033
+Spearman coefficient wl_sizeandlatency: 0.6339764538462033
+Spearman coefficient wl_kmeans: 0.7810870121972561
+Simple coefficient mca_cycles: 96.92307692307692
+Simple coefficient mca_uops: 98.46153846153847
+Simple coefficient mca_throughput: 98.46153846153847
+Simple coefficient uica: 98.46153846153847
+Simple coefficient wl_latency: 69.23076923076923
+Simple coefficient wl_recipthroughput: 73.84615384615384
+Simple coefficient wl_codesize: 73.84615384615384
+Simple coefficient wl_sizeandlatency: 73.84615384615384
+Simple coefficient wl_kmeans: 80.0
+------------------------------------------
+
+telecom_adpcm_d
+Kendall coefficient mca_cycles: 0.7175781594491396
+Kendall coefficient mca_uops: 0.6870429186215167
+Kendall coefficient mca_throughput: 0.6870429186215167
+Kendall coefficient uica: 0.6870429186215167
+Kendall coefficient wl_latency: 0.2595495470347952
+Kendall coefficient wl_recipthroughput: 0.2900847878624182
+Kendall coefficient wl_codesize: 0.22901430620717222
+Kendall coefficient wl_sizeandlatency: 0.22901430620717222
+Kendall coefficient wl_kmeans: 0.2595495470347952
+Spearman coefficient mca_cycles: 0.8511396590310907
+Spearman coefficient mca_uops: 0.8441343943477072
+Spearman coefficient mca_throughput: 0.8441343943477072
+Spearman coefficient uica: 0.8441343943477072
+Spearman coefficient wl_latency: 0.3047290137271806
+Spearman coefficient wl_recipthroughput: 0.32574480777733106
+Spearman coefficient wl_codesize: 0.29071848436041375
+Spearman coefficient wl_sizeandlatency: 0.29071848436041375
+Spearman coefficient wl_kmeans: 0.3747816605610153
+Simple coefficient mca_cycles: 86.15384615384616
+Simple coefficient mca_uops: 84.61538461538461
+Simple coefficient mca_throughput: 84.61538461538461
+Simple coefficient uica: 84.61538461538461
+Simple coefficient wl_latency: 63.07692307692308
+Simple coefficient wl_recipthroughput: 64.61538461538461
+Simple coefficient wl_codesize: 61.53846153846154
+Simple coefficient wl_sizeandlatency: 61.53846153846154
+Simple coefficient wl_kmeans: 63.07692307692308
+------------------------------------------
+
+telecom_CRC32
+Kendall coefficient mca_cycles: 0.4732962328281559
+Kendall coefficient mca_uops: 0.5038314736557788
+Kendall coefficient mca_throughput: 0.5343667144834019
+Kendall coefficient uica: 0.4732962328281559
+Kendall coefficient wl_latency: 0.22901430620717222
+Kendall coefficient wl_recipthroughput: 0.19847906537954926
+Kendall coefficient wl_codesize: 0.19847906537954926
+Kendall coefficient wl_sizeandlatency: 0.19847906537954926
+Kendall coefficient wl_kmeans: 0.2900847878624182
+Spearman coefficient mca_cycles: 0.6549922478963537
+Spearman coefficient mca_uops: 0.6690027772631207
+Spearman coefficient mca_throughput: 0.7180396300468049
+Spearman coefficient uica: 0.6549922478963537
+Spearman coefficient wl_latency: 0.32574480777733106
+Spearman coefficient wl_recipthroughput: 0.3117342784105641
+Spearman coefficient wl_codesize: 0.3117342784105641
+Spearman coefficient wl_sizeandlatency: 0.3117342784105641
+Spearman coefficient wl_kmeans: 0.3747816605610153
+Simple coefficient mca_cycles: 73.84615384615384
+Simple coefficient mca_uops: 75.38461538461539
+Simple coefficient mca_throughput: 76.92307692307692
+Simple coefficient uica: 73.84615384615384
+Simple coefficient wl_latency: 61.53846153846154
+Simple coefficient wl_recipthroughput: 60.0
+Simple coefficient wl_codesize: 60.0
+Simple coefficient wl_sizeandlatency: 60.0
+Simple coefficient wl_kmeans: 64.61538461538461
+------------------------------------------
+
+telecom_gsm
+Kendall coefficient mca_cycles: 0.6363636363636362
+Kendall coefficient mca_uops: 0.5454545454545454
+Kendall coefficient mca_throughput: 0.5757575757575757
+Kendall coefficient uica: 0.5151515151515151
+Kendall coefficient wl_latency: 0.19847906537954926
+Kendall coefficient wl_recipthroughput: 0.22901430620717222
+Kendall coefficient wl_codesize: 0.32062002869004114
+Kendall coefficient wl_sizeandlatency: 0.32062002869004114
+Kendall coefficient wl_kmeans: 0.32062002869004114
+Spearman coefficient mca_cycles: 0.8181818181818183
+Spearman coefficient mca_uops: 0.6853146853146854
+Spearman coefficient mca_throughput: 0.7412587412587414
+Spearman coefficient uica: 0.6643356643356644
+Spearman coefficient wl_latency: 0.5078816895453011
+Spearman coefficient wl_recipthroughput: 0.5218922189120679
+Spearman coefficient wl_codesize: 0.5849396010625192
+Spearman coefficient wl_sizeandlatency: 0.5849396010625192
+Spearman coefficient wl_kmeans: 0.5849396010625192
+Simple coefficient mca_cycles: 81.81818181818181
+Simple coefficient mca_uops: 77.27272727272727
+Simple coefficient mca_throughput: 78.78787878787878
+Simple coefficient uica: 75.75757575757575
+Simple coefficient wl_latency: 60.0
+Simple coefficient wl_recipthroughput: 61.53846153846154
+Simple coefficient wl_codesize: 66.15384615384616
+Simple coefficient wl_sizeandlatency: 66.15384615384616
+Simple coefficient wl_kmeans: 66.15384615384616
+------------------------------------------
+
+KENDALL AVG:
+mca: cycles = 0.6239851154194178 // uops = 0.6221193012484891 // throughput = 0.6326177429120224 // uica = 0.6251148918888277
+wl_latency = 0.3527165983955444
+wl_recipthroughput = 0.35167517834373374
+wl_codesize = 0.3726015676012465
+wl_sizeandlatency = 0.3726015676012465
+wl_kmeans = 0.42195657248732366
+SPEARMAN AVG:
+mca: cycles = 0.7795272075397757 // uops = 0.7758488447017421 // throughput = 0.789031273412895 // uica = 0.7765657989603396
+wl_latency = 0.47957901372743683
+wl_recipthroughput = 0.4697115741560329
+wl_codesize = 0.49658958786773155
+wl_sizeandlatency = 0.49658958786773155
+wl_kmeans = 0.5782454695457686
+SIMPLE AVG:
+mca: cycles = 81.28613551690476 // uops = 81.19279580818042 // throughput = 81.71816787201402 // uica = 81.34082441774748
+wl_latency = 67.68463730002192
+wl_recipthroughput = 67.62705955013647
+wl_codesize = 68.68248560556252
+wl_sizeandlatency = 68.68248560556252
+wl_kmeans = 71.16470424162732
+TOTAL:
+Kendall coefficient mca_cycles: 0.3904499737527341
+Kendall coefficient mca_uops: 0.3894219208327713
+Kendall coefficient mca_throughput: 0.4151367673190707
+Kendall coefficient uica: 0.40134179875281595
+Kendall coefficient wl_latency: 0.2050554172478475
+Kendall coefficient wl_recipthroughput: 0.22787650526605477
+Kendall coefficient wl_codesize: 0.22478353729289116
+Kendall coefficient wl_sizeandlatency: 0.22478353729289116
+Kendall coefficient wl_kmeans: 0.28382457692150026

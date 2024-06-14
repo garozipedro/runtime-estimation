@@ -11,7 +11,7 @@ function run_tool {
     load_plugins=""
     for path in ${deps_path[@]}; do load_plugins+=" -load-pass-plugin ${path} "; done
     load_plugins+=" -load-pass-plugin ${plugin_path} "
-    $llvm_dir/bin/opt ${load_plugins} -passes="EstimateCostPass" -disable-output $target --prediction-cost-kind='latency,one' # --use-points-to-analysis
+    $llvm_dir/bin/opt ${load_plugins} -passes="EstimateCostPass" -disable-output $target --prediction-cost-kind='latency,recipthroughput,codesize,sizeandlatency' # --use-points-to-analysis
 }
 
 run_tool $1

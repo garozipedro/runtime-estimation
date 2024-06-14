@@ -52,6 +52,12 @@ cl::opt<std::string> arg_cost_opt(
   cl::value_desc("one or more of: recipthroughput, latency, codesize, sizeandlatency, one, dynamic")
 );
 
+cl::opt<bool> arg_freqs(
+  "frequencies",
+  cl::init(false),
+  cl::desc("Compute the frequencies only, don't multiply by the cost")
+);
+
 enum class Cost_option {
   latency, recipthroughput, codesize, sizeandlatency, one, dynamic,
 };
@@ -100,25 +106,31 @@ private:
   void compute_cost(Function &);
   void compute_cost(BasicBlock &, TargetTransformInfo *);
   void generate_yaml();
+  void generate_freqs_yaml();
 
   map<Cost_option, map<Function *, double>> costs_{};
   bool llvm_cost_selected_{ false };
 
   FunctionCallFrequencyPass *wu_larus_ = nullptr;
   FunctionAnalysisManager *fam_;
+  Module *module_;
 };
 
 llvm::PreservedAnalyses EstimateCostPass::run(llvm::Module &module, llvm::ModuleAnalysisManager &mam) {
 //-  outs() << "Estimate Cost Pass for module: [" << module.getName() << "]\n";;
   fam_ = &mam.getResult<FunctionAnalysisManagerModuleProxy>(module).getManager();
+  module_ = &module;
 
 //  outs() << "\n\n********************[ Running Wu & Larus ]********************\n";
   wu_larus_ = &mam.getResult<FunctionCallFrequencyPass>(module);
 //  outs() << "\n\n********************[ Ran Wu & Larus ]********************\n";
-  // Multiply frequencies by instruction costs.
-  select_costs();
-  compute_cost(module);
-  generate_yaml();
+  if (arg_freqs) {// Generate the frequencies only.
+    generate_freqs_yaml();
+  } else {// Multiply frequencies by instruction costs.
+    select_costs();
+    compute_cost(module);
+    generate_yaml();
+  }
   return llvm::PreservedAnalyses::all();
 }
 
@@ -154,7 +166,6 @@ void EstimateCostPass::compute_cost(Function &fun)
 void EstimateCostPass::compute_cost(BasicBlock &bb, TargetTransformInfo *tti)
 {
   Function *fun = bb.getParent();
-  double cos{ 0 };
   double freq{ wu_larus_->get_global_block_frequency(&bb) };
   for (auto &[cost_opt, _] : costs_) {
     // Default LLVM costs from TargetIRAnalysis.
@@ -194,20 +205,48 @@ void EstimateCostPass::print_freqs(Module &module)
 void EstimateCostPass::generate_yaml()
 {
   outs() << "Cost_options:\n";
-  for (auto &[cost_option, function_cost] : costs_) {
-    double program_cost = 0;
+  for (auto &[cost_option, function_costs] : costs_) {
+    double program_cost{ 0 };
+    for (auto &[_, cost] : function_costs) program_cost += cost;
     outs() << "- Option:\n";
     outs() << "    Name: " << cost_name(cost_option) << '\n';
-    outs() << "    Functions:\n";
-    for (auto &[function, cost] : function_cost) {
-      outs() << "    - Function:\n"
-             << "        Name: " << function->getName() << '\n'
-             << "        Cost: " << cost << '\n';
-      program_cost += cost;
-    }
+    // outs() << "    Functions:\n";
+    // for (auto &[function, cost] : function_costs) {
+    //   outs() << "    - Function:\n"
+    //          << "        Name: " << function->getName() << '\n'
+    //          << "        Cost: " << cost << '\n';
+    //   program_cost += cost;
+    // }
     outs() << "    Total cost: " << program_cost << '\n';
   }
 }
+
+void EstimateCostPass::generate_freqs_yaml()
+{
+  outs() << "Module:\n"
+         << "  Name: " << module_->getName() << '\n'
+         << "  Functions:\n";
+  for (Function &fun : *module_) {
+    if (fun.empty() && !fun.isMaterializable()) continue;
+    double cfreq{ wu_larus_->get_invocation_frequency(&fun) };
+    outs() << "    - Function:\n"
+           << "        Name: " << fun.getName() << '\n'
+           << "        Freq: " << cfreq << '\n'
+           << "        BasicBlocks:\n";
+    for (BasicBlock &bb : fun) {
+      double bfreq{ wu_larus_->get_global_block_frequency(&bb) };
+      map<unsigned, unsigned long> histogram{}; // Opcode -> count.
+      outs() << "          - BasicBlock:\n";
+      for (Instruction &instr : bb) histogram[instr.getOpcode()] += 1;
+      outs() << "              Freq: " << bfreq << '\n'
+             << "              Histogram:\n";
+      for (auto &[opcode, count] : histogram) {
+        outs() << "                - " << opcode << ": " << count << '\n';
+      }
+    }
+  }
+}
+
 
 extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() {
   return {
